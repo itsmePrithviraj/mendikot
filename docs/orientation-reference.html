@@ -1,0 +1,126 @@
+<style>
+#mk-orient{container-type:inline-size;font-family:system-ui,sans-serif;color:light-dark(#163d34,#e8ede6);--mk-felt:light-dark(#e3ebe3,#173d34);--mk-ink:light-dark(#173d34,#edf0e6);--mk-soft:light-dark(#426257,#bfd0c5);--mk-paper:light-dark(#fffdf5,#f1eee4);--mk-red:#a82e38;--mk-line:light-dark(#b9cabe,#3c6255);--mk-gold:light-dark(#725022,#e4c78b)}
+#mk-orient *{box-sizing:border-box}
+#mk-orient .mk-stage{min-height:720px;display:flex;align-items:center;justify-content:center;padding:18px 0 32px}
+#mk-orient .mk-preview{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+#mk-orient .mk-caption{font-size:12px;color:var(--mk-soft);text-align:center;margin:0}
+#mk-orient .mk-game{width:667px;max-width:100%;height:375px;background:var(--mk-felt);color:var(--mk-ink);border-radius:22px;position:relative;overflow:hidden;box-shadow:0 12px 32px #00000018;display:flex;flex-direction:column;padding:12px 20px 14px;isolation:isolate}
+#mk-orient .mk-top{height:37px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;border-bottom:1px solid var(--mk-line);padding-bottom:8px}
+#mk-orient .mk-brand{font-family:Georgia,serif;font-size:21px;letter-spacing:-.5px}
+#mk-orient .mk-score{display:flex;gap:14px;font-size:12px}
+#mk-orient .mk-score strong{font-size:15px;margin-left:4px}
+#mk-orient .mk-trump{font-size:12px;color:var(--mk-gold);white-space:nowrap}
+#mk-orient .mk-table{position:relative;flex:1;min-height:0}
+#mk-orient .mk-seat{position:absolute;text-align:center;font-size:11px;line-height:1.3;width:132px;color:var(--mk-soft)}
+#mk-orient .mk-seat strong{display:block;color:var(--mk-ink);font-size:12px;font-weight:600;overflow-wrap:anywhere}
+#mk-orient .mk-seat .mk-avatar{width:29px;height:29px;display:grid;place-items:center;border:1px solid var(--mk-line);border-radius:50%;margin:0 auto 3px;font-size:11px;color:var(--mk-ink)}
+#mk-orient .mk-partner{top:7px;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:8px;width:235px;text-align:left}
+#mk-orient .mk-partner .mk-avatar{margin:0;flex-shrink:0}
+#mk-orient .mk-left{left:0;top:58px}
+#mk-orient .mk-right{right:0;top:58px}
+#mk-orient .mk-trick{position:absolute;left:50%;top:46px;transform:translateX(-50%);width:200px;height:100px}
+#mk-orient .mk-played{position:absolute;width:44px;height:63px;background:var(--mk-paper);color:#25352f;border-radius:6px;box-shadow:0 3px 7px #0000001f;padding:5px;font:600 17px/1.1 Georgia,serif}
+#mk-orient .mk-played span{display:block;font-size:17px}
+#mk-orient .mk-played.red{color:var(--mk-red)}
+#mk-orient .mk-played:nth-child(1){left:18px;top:30px;transform:rotate(-9deg)}
+#mk-orient .mk-played:nth-child(2){left:78px;top:0}
+#mk-orient .mk-played:nth-child(3){right:18px;top:30px;transform:rotate(9deg)}
+#mk-orient .mk-played:nth-child(4){left:78px;top:41px}
+#mk-orient .mk-hand-area{flex-shrink:0}
+#mk-orient .mk-turn{display:flex;justify-content:space-between;align-items:center;margin:0 0 17px;font-size:12px;color:var(--mk-soft)}
+#mk-orient .mk-turn strong{color:var(--mk-ink);font-weight:600}
+#mk-orient .mk-hand{display:flex;gap:0;width:100%;height:76px}
+#mk-orient .mk-row{display:flex;width:100%;min-width:0}
+#mk-orient .mk-card{appearance:none;position:relative;flex:1;min-width:0;height:76px;border:1px solid #c7c8bc;border-radius:7px;background:var(--mk-paper);color:#25352f;text-align:left;vertical-align:top;padding:6px 0 0 7px;touch-action:manipulation;font-family:Georgia,serif;transition:transform 130ms ease-out;box-shadow:0 2px 3px #0000000a}
+#mk-orient .mk-card + .mk-card{margin-left:-1px}
+#mk-orient .mk-card.red{color:var(--mk-red)}
+#mk-orient .mk-card .mk-rank{display:block;font-size:21px;line-height:1.05;font-weight:600}
+#mk-orient .mk-card .mk-suit{display:block;font-size:20px;line-height:1.1}
+#mk-orient .mk-card[aria-pressed=true]{transform:translateY(-12px);border:2px solid var(--mk-gold);padding-left:6px;z-index:2}
+#mk-orient .mk-card:hover{transform:translateY(-5px)}
+#mk-orient .mk-card[aria-pressed=true]:hover{transform:translateY(-12px)}
+#mk-orient .mk-card:focus-visible{z-index:3}
+#mk-orient .mk-card .mk-ten{position:absolute;right:5px;bottom:5px;font:500 9px system-ui,sans-serif;letter-spacing:.5px}
+#mk-orient .mk-actions{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:10px;height:42px}
+#mk-orient .mk-status{font-size:12px;line-height:1.3;color:var(--mk-soft);max-width:65%}
+#mk-orient .mk-action{border:0;border-radius:8px;background:light-dark(#244e3f,#e4c78b);color:light-dark(#fffdf5,#183c31);font:600 13px system-ui,sans-serif;min-height:42px;min-width:116px;padding:10px 15px;touch-action:manipulation}
+#mk-orient .mk-action:disabled{opacity:.45;cursor:default}
+#mk-orient .mk-replay{background:transparent;color:var(--mk-ink);border:1px solid var(--mk-line)}
+#mk-orient .mk-game.portrait{width:375px;height:667px;padding:20px 15px 24px}
+#mk-orient .portrait .mk-top{height:64px;position:relative;align-items:flex-start}
+#mk-orient .portrait .mk-score{position:absolute;bottom:8px;left:0;font-size:12px}
+#mk-orient .portrait .mk-brand{font-size:22px}
+#mk-orient .portrait .mk-trump{padding-top:5px}
+#mk-orient .portrait .mk-partner{top:17px}
+#mk-orient .portrait .mk-left{top:104px;left:0;width:91px}
+#mk-orient .portrait .mk-right{top:104px;right:0;width:91px}
+#mk-orient .portrait .mk-trick{top:93px;width:142px}
+#mk-orient .portrait .mk-played:nth-child(1){left:5px;top:38px}
+#mk-orient .portrait .mk-played:nth-child(2){left:49px;top:0}
+#mk-orient .portrait .mk-played:nth-child(3){right:5px;top:38px}
+#mk-orient .portrait .mk-played:nth-child(4){left:49px;top:76px}
+#mk-orient .portrait .mk-hand{height:170px;flex-direction:column;gap:18px}
+#mk-orient .portrait .mk-row{height:76px}
+#mk-orient .portrait .mk-actions{margin-top:14px}
+#mk-orient .mk-narrow-note{display:none}
+@media(max-width:599px){
+#mk-orient .mk-game.landscape{width:375px;height:667px;padding:20px 15px 24px}
+#mk-orient .landscape .mk-top{height:64px;position:relative;align-items:flex-start}
+#mk-orient .landscape .mk-score{position:absolute;bottom:8px;left:0}
+#mk-orient .landscape .mk-trump{padding-top:5px}
+#mk-orient .landscape .mk-partner{top:17px}
+#mk-orient .landscape .mk-left{top:104px;left:0;width:91px}
+#mk-orient .landscape .mk-right{top:104px;right:0;width:91px}
+#mk-orient .landscape .mk-trick{top:93px;width:142px}
+#mk-orient .landscape .mk-played:nth-child(1){left:5px;top:38px}
+#mk-orient .landscape .mk-played:nth-child(2){left:49px;top:0}
+#mk-orient .landscape .mk-played:nth-child(3){right:5px;top:38px}
+#mk-orient .landscape .mk-played:nth-child(4){left:49px;top:76px}
+#mk-orient .landscape .mk-hand{height:170px;flex-direction:column;gap:18px}
+#mk-orient .landscape .mk-row{height:76px}
+#mk-orient .mk-narrow-note{display:inline}
+#mk-orient .mk-wide-note{display:none}
+}
+@container(max-width:340px){
+#mk-orient .mk-game.portrait,#mk-orient .mk-game.landscape{height:740px}
+#mk-orient .mk-game .mk-left,#mk-orient .mk-game .mk-right{top:65px}
+#mk-orient .mk-game .mk-trick{top:155px}
+#mk-orient .mk-game .mk-hand{height:264px}
+#mk-orient .mk-caption{max-width:250px}
+}
+@media(prefers-reduced-motion:reduce){#mk-orient .mk-card{transition:none}}
+</style>
+<div id="mk-orient" aria-label="Mendikot orientation comparison">
+<div class="viz-carousel viz-dotted-background" aria-label="Phone gameplay layouts">
+<section data-variant="Landscape · single row" aria-label="Landscape card table"><div class="mk-stage"><div class="mk-preview"><div class="mk-game landscape" data-layout="landscape" aria-label="Landscape selection practice"></div><p class="mk-caption"><span class="mk-wide-note">667 × 375 · single-row hand · sample deal</span><span class="mk-narrow-note">Portrait fallback · widen this view to compare landscape</span></p></div></div></section>
+<section data-variant="Portrait · two rows" aria-label="Portrait card table" hidden><div class="mk-stage"><div class="mk-preview"><div class="mk-game portrait" data-layout="portrait" aria-label="Portrait selection practice"></div><p class="mk-caption">375 × 667 · two-row hand · sample deal</p></div></div></section>
+</div>
+</div>
+<script>
+(()=>{
+const root=document.getElementById('mk-orient');
+const cards=[['A','♠','spades'],['J','♠','spades'],['10','♠','spades'],['7','♠','spades'],['K','♥','hearts'],['Q','♥','hearts'],['9','♥','hearts'],['A','♦','diamonds'],['10','♦','diamonds'],['7','♦','diamonds'],['K','♣','clubs'],['10','♣','clubs'],['2','♣','clubs']];
+const models={landscape:{selected:null,played:null},portrait:{selected:null,played:null}};
+const preferences={longNames:true};
+const rankName=r=>({A:'Ace',K:'King',Q:'Queen',J:'Jack'}[r]||r);
+function restore(saved){const p=saved?.privateContent;if(!p)return; for(const layout of ['landscape','portrait']){const v=p[layout];if(v){models[layout].selected=Number.isInteger(v.selected)&&v.selected>=0&&v.selected<13?v.selected:null;models[layout].played=[7,8,9].includes(v.played)?v.played:null;}}if(typeof p.longNames==='boolean')preferences.longNames=p.longNames;}
+restore(window.openai?.widgetState);
+function persist(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{comparison:'Mendikot landscape single row versus portrait two rows',landscapeCard:models.landscape.selected===null?null:cards[models.landscape.selected].slice(0,2).join(''),portraitCard:models.portrait.selected===null?null:cards[models.portrait.selected].slice(0,2).join('')},privateContent:{...models,longNames:preferences.longNames}}).catch(()=>{});}
+function playedCard(rank,suit){return `<div class="mk-played red" aria-label="${rankName(rank)} of diamonds">${rank}<span>${suit}</span></div>`;}
+root.querySelectorAll('.mk-game').forEach(game=>{
+const layout=game.dataset.layout;
+game.innerHTML=`<div class="mk-top"><span class="mk-brand">Mendikot</span><div class="mk-score"><span>Our tens <strong class="mk-our-score">0</strong></span><span>Theirs <strong class="mk-their-score">0</strong></span></div><span class="mk-trump">Hukum <b>♠</b></span></div><div class="mk-table"><div class="mk-seat mk-partner"><span class="mk-avatar">AD</span><div><strong data-person="partner"></strong><span>Your partner · 12 cards</span></div></div><div class="mk-seat mk-left"><span class="mk-avatar">VK</span><strong data-person="left"></strong><span>Opponent · 12 cards</span></div><div class="mk-seat mk-right"><span class="mk-avatar">SM</span><strong data-person="right"></strong><span>Opponent · 12 cards</span></div><div class="mk-trick" aria-label="Current trick: king, eight, and queen of diamonds">${playedCard('K','♦')}${playedCard('8','♦')}${playedCard('Q','♦')}</div></div><div class="mk-hand-area"><div class="mk-turn"><strong class="mk-turn-text">Your turn · follow ♦</strong><span class="mk-hand-count">13 cards</span></div><div class="mk-hand" role="group" aria-label="Your hand"></div><div class="mk-actions"><span class="mk-status" role="status" aria-live="polite">Select a card to preview</span><button type="button" class="mk-action cursor-interaction" disabled>Play card</button></div></div>`;
+const hand=game.querySelector('.mk-hand');
+const narrow=()=>layout==='portrait'||root.getBoundingClientRect().width<600;
+let lastNarrow=null;
+function arrange(){const mode=narrow()?(root.getBoundingClientRect().width<=340?'tiny':'portrait'):'landscape';if(mode===lastNarrow)return;lastNarrow=mode;const buttons=[...hand.querySelectorAll('.mk-card')];hand.replaceChildren();const groups=mode==='tiny'?[buttons.slice(0,4),buttons.slice(4,9),buttons.slice(9)]:mode==='portrait'?[buttons.slice(0,7),buttons.slice(7)]:[buttons];const caption=game.parentElement.querySelector('.mk-caption');if(layout==='portrait')caption.textContent=mode==='tiny'?'Compact fallback · three-row hand · sample deal':'375 × 667 · two-row hand · sample deal';for(const group of groups){const row=document.createElement('div');row.className='mk-row';group.forEach(b=>row.append(b));hand.append(row);}}
+cards.forEach(([rank,suit,name],index)=>{const b=document.createElement('button');b.type='button';b.className='mk-card cursor-interaction'+(['♥','♦'].includes(suit)?' red':'');b.setAttribute('aria-label',rankName(rank)+' of '+name);b.dataset.index=index;b.setAttribute('aria-pressed','false');b.innerHTML=`<span class="mk-rank">${rank}</span><span class="mk-suit">${suit}</span>${rank==='10'?'<span class="mk-ten">TEN</span>':''}`;b.addEventListener('click',()=>{if(models[layout].played!==null)return;models[layout].selected=models[layout].selected===index?null:index;update();persist();});hand.append(b);});
+arrange();new ResizeObserver(arrange).observe(root);
+function update(){const m=models[layout],done=m.played!==null,selected=m.selected===null?null:cards[m.selected];game.querySelector('[data-person=partner]').textContent=preferences.longNames?'Aniruddha Deshpande':'Aniruddha';game.querySelector('[data-person=left]').textContent=preferences.longNames?'Venkatesh Krishnamurthy':'Venkatesh';game.querySelector('[data-person=right]').textContent=preferences.longNames?'Sanjana Mukhopadhyay':'Sanjana';game.querySelectorAll('.mk-card').forEach(b=>{const i=Number(b.dataset.index);b.setAttribute('aria-pressed',String(m.selected===i&&!done));b.disabled=done;b.style.visibility=done&&i===m.played?'hidden':'visible';});const action=game.querySelector('.mk-action');action.disabled=!done&&(!selected||selected[2]!=='diamonds');action.classList.toggle('mk-replay',done);action.textContent=done?'Replay hand':selected?`Play ${selected[0]}${selected[1]}`:'Play card';const status=game.querySelector('.mk-status');status.textContent=done?(m.played===7?'Your ace wins the trick.':m.played===8?'Opponent wins your ten.':'Opponent’s king wins the trick.'):selected?(selected[2]==='diamonds'?`${rankName(selected[0])} of diamonds selected`:'You have diamonds. Follow suit.'):'Select a card to preview';game.querySelector('.mk-turn-text').textContent=done?'Trick complete':'Your turn · follow ♦';game.querySelector('.mk-hand-count').textContent=done?'12 cards':'13 cards';game.querySelector('.mk-their-score').textContent=done&&m.played===8?'1':'0';const trick=game.querySelector('.mk-trick');trick.innerHTML=playedCard('K','♦')+playedCard('8','♦')+playedCard('Q','♦')+(done?playedCard(cards[m.played][0],'♦'):'');}
+game.querySelector('.mk-action').addEventListener('click',()=>{const m=models[layout];if(m.played!==null){m.selected=null;m.played=null;}else if(m.selected!==null&&cards[m.selected][2]==='diamonds'){m.played=m.selected;}update();persist();});
+game.mkUpdate=update;update();
+});
+window.addEventListener('openai:set_globals',event=>{const saved=event.detail?.globals?.widgetState;if(saved){restore(saved);root.querySelectorAll('.mk-game').forEach(g=>g.mkUpdate());}});
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{root.querySelectorAll('.mk-game').forEach(g=>g.mkUpdate());persist();}});tweak.addToggle(preferences,'longNames',{label:'Long player names'});}
+})();
+</script>
