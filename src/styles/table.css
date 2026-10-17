@@ -172,7 +172,7 @@
   color: var(--on-felt-2);
   white-space: nowrap;
 }
-.trick-count span {
+.trick-count span:not(.trick-word) {
   color: var(--on-felt-3);
 }
 .chip {
@@ -720,6 +720,21 @@
   }
   .team-tricks small {
     display: none;
+  }
+  .felt {
+    grid-template-columns: minmax(64px, 18%) minmax(0, 1fr) minmax(64px, 18%);
+  }
+  .seat-2 {
+    gap: 6px;
+  }
+  .trick-word,
+  .chip-label {
+    display: none;
+  }
+  .last-trick-btn {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
   }
   .home {
     padding-inline: var(--s4);

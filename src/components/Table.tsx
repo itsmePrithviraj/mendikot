@@ -65,14 +65,15 @@ export function Table({
     <section className={`felt${panel ? " has-panel" : ""}`} aria-label="Table">
       {game.phase !== "complete" && game.phase !== "choosing-trump" && (
         <span className="trick-count tnum">
-          Trick {Math.min(done + 1, 13)}
+          <span className="trick-word">Trick </span>
+          {Math.min(done + 1, 13)}
           <span> / 13</span>
         </span>
       )}
       {game.lastTrick && game.phase !== "complete" && (
-        <button className="chip last-trick-btn" onClick={onLastTrick}>
+        <button className="chip last-trick-btn" onClick={onLastTrick} aria-label="Last trick">
           <History strokeWidth={1.75} />
-          Last trick
+          <span className="chip-label">Last trick</span>
         </button>
       )}
       {([2, 3, 1] as const).map((seat) => (
