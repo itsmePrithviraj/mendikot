@@ -6,6 +6,7 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:4173",
     viewport: { width: 1440, height: 900 },
+    trace: "retain-on-failure",
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
       : {},

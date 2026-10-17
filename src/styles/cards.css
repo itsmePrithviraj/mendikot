@@ -1,0 +1,529 @@
+/* ---------- Card artwork ---------- */
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  container: card / inline-size;
+  border-radius: 6.4% / 4.57%;
+  box-shadow: var(--shadow-card);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.card svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  shape-rendering: geometricPrecision;
+}
+.card.hearts,
+.card.diamonds {
+  color: var(--oxblood);
+}
+.card.spades,
+.card.clubs {
+  color: var(--ivory-ink);
+}
+.card-paper {
+  fill: var(--card-paper, var(--ivory));
+}
+.card-hairline {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.13;
+  stroke-width: 1.5;
+}
+.card .rank {
+  fill: currentColor;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
+}
+.card .rank.ten {
+  letter-spacing: -0.07em;
+}
+.card .pip {
+  opacity: var(--pip-opacity, 1);
+}
+.brass-line {
+  fill: none;
+  stroke: var(--brass-deep);
+  stroke-width: 2;
+}
+.brass-fill {
+  fill: var(--brass-deep);
+}
+.ink-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.28;
+  stroke-width: 1.2;
+}
+.ink-line.faint {
+  stroke-opacity: 0.16;
+}
+.court-panel {
+  fill: currentColor;
+  fill-opacity: 0.05;
+  stroke: var(--brass-deep);
+  stroke-width: 2;
+}
+.medallion use {
+  --fleece: 0.16;
+}
+/* Symbol internals read context through inherited custom properties. */
+.sheep-fleece {
+  fill: var(--fleece-color, currentColor);
+  fill-opacity: var(--fleece, 0.2);
+}
+.sheep-eye {
+  fill: var(--sheep-eye, var(--ivory));
+}
+.crest-vein {
+  stroke: var(--card-paper, var(--ivory));
+}
+.face-compact .pip use {
+  --fleece: 0.14;
+}
+
+/* Choose a composition from rendered width. */
+@container card (max-width: 69.98px) {
+  .face-full {
+    display: none;
+  }
+}
+@container card (min-width: 70px) {
+  .face-compact {
+    display: none;
+  }
+}
+/* Hand cards overlap, so the bold compact index wins for longer. */
+@container card (min-width: 70px) and (max-width: 89.98px) {
+  .hand-card .face-full {
+    display: none;
+  }
+  .hand-card .face-compact {
+    display: inline;
+  }
+}
+
+/* Back */
+.back-paper {
+  fill: var(--ivory);
+}
+.back-felt {
+  fill: var(--felt-700);
+}
+.weave-line {
+  stroke: var(--brass);
+  stroke-opacity: 0.34;
+}
+.weave-diamond {
+  fill: var(--brass);
+  fill-opacity: 0.07;
+}
+.weave-dot {
+  fill: var(--ivory);
+  fill-opacity: 0.4;
+}
+.back-frame {
+  fill: none;
+  stroke: var(--brass);
+  stroke-opacity: 0.75;
+  stroke-width: 2;
+}
+.back-medallion {
+  fill: var(--felt-700);
+  stroke: var(--brass);
+  stroke-opacity: 0.75;
+  stroke-width: 2;
+}
+.back-medallion-ring {
+  fill: var(--ivory);
+}
+.back-sheep {
+  color: var(--felt-700);
+  --fleece: 0.12;
+}
+
+/* ---------- Hand ---------- */
+.hand {
+  --gap: 6px;
+  --cols: 7;
+  --card-w: clamp(44px, 19.5cqw, 104px);
+  --step: min(
+    calc(var(--card-w) + 4px),
+    calc((100cqw - var(--card-w) - 1px) / (var(--cols) - 1))
+  );
+  container: hand / inline-size;
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-end;
+  row-gap: var(--gap);
+  column-gap: 0;
+  min-width: 0;
+}
+.hand-card + .hand-card {
+  margin-left: calc(var(--step) - var(--card-w));
+}
+.hand-card:nth-child(7n + 1) {
+  margin-left: 0;
+}
+.hand.five-cards {
+  --cols: 5;
+  --card-w: min(calc((100cqw - 32px) / 5), 88px);
+  --step: calc(var(--card-w) + 8px);
+}
+.hand-card {
+  --lift: 0px;
+  --arc-y: 0px;
+  --arc-r: 0deg;
+  position: relative;
+  flex: none;
+  width: var(--card-w);
+  border-radius: 6.4% / 4.57%;
+  transform: translateY(calc(var(--arc-y) + var(--lift))) rotate(var(--arc-r));
+  transform-origin: 50% 100%;
+  transition:
+    transform 200ms var(--ease-spring),
+    opacity var(--t-fast);
+  -webkit-touch-callout: none;
+}
+.hand-card .card {
+  transition: box-shadow var(--t-fast);
+}
+.hand-card.unplayable {
+  --card-paper: var(--ivory-dim);
+  --pip-opacity: 0.55;
+}
+.hand-card.unplayable .card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+.hand-card.selected {
+  --lift: calc(var(--card-w) * -0.2);
+}
+.hand-card.selected .card {
+  box-shadow:
+    0 0 0 2px var(--brass),
+    0 0 0 4px rgb(210 181 122 / 0.25),
+    var(--shadow-lift);
+}
+.hand-card:focus-visible {
+  outline: none;
+}
+.hand-card:focus-visible .card {
+  box-shadow:
+    0 0 0 3px var(--focus),
+    var(--shadow-lift);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hand-card.legal:not(:disabled):not(.selected):hover {
+    --lift: -8px;
+  }
+}
+.hand-card.shake {
+  animation: shake var(--t-base) var(--ease-out);
+}
+.app[data-stage="shuffle"] .hand-card {
+  opacity: 0;
+}
+.hand.dealing .hand-card {
+  animation: deal-in var(--t-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i) * 35ms);
+}
+
+/* Narrow portrait phones: three readable rows. */
+@media (orientation: portrait) and (max-width: 359px) {
+  .hand {
+    --cols: 5;
+    --card-w: min(calc((100cqw - 16px) / 5), 64px);
+  }
+  .hand-card:nth-child(7n + 1) {
+    margin-left: calc(var(--step) - var(--card-w));
+  }
+  .hand-card:nth-child(5n + 1) {
+    margin-left: 0;
+  }
+}
+
+/* Single overlapping row in landscape. */
+@media (orientation: landscape) {
+  .hand {
+    --c: calc((var(--count) - 1) / 2);
+    --step: min(
+      calc(var(--card-w) * var(--overlap)),
+      calc((100cqw - var(--card-w)) / max(var(--count) - 1, 1))
+    );
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .hand-card:nth-child(n + 2) {
+    margin-left: calc(var(--step) - var(--card-w));
+  }
+  .hand-card {
+    --d: calc(var(--i) - var(--c));
+    --arc-y: calc(var(--d) * var(--d) * var(--arc, 0.35px));
+    --arc-r: calc(var(--d) * var(--fan, 0.9deg));
+  }
+  .hand.five-cards {
+    --overlap: 1.08;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .hand {
+    --card-w: clamp(46px, 16.5dvh, 69px);
+    --overlap: 0.82;
+    --arc: 0.16px;
+    --fan: 0.6deg;
+    padding-bottom: 10px;
+  }
+  .hand.five-cards {
+    --card-w: clamp(46px, 18dvh, 76px);
+  }
+}
+@media (orientation: landscape) and (min-height: 521px) {
+  .hand {
+    --card-w: clamp(66px, min(8.6cqw, 16dvh), 124px);
+    --overlap: 0.68;
+    --arc: 0.5px;
+    --fan: 1.1deg;
+  }
+  .hand.five-cards {
+    --card-w: clamp(76px, min(10cqw, 17dvh), 124px);
+  }
+}
+
+/* ---------- Trick ---------- */
+.trick {
+  --tx: 1.04;
+  --ty: 0.5;
+  --trick-max: 128px;
+  --tw: min(
+    calc(100cqw / (1 + 2 * var(--tx))),
+    calc(100cqh / (1.4 * (1 + 2 * var(--ty)))),
+    var(--trick-max)
+  );
+  container: trick / size;
+  position: absolute;
+  inset: 0;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .trick {
+    --tx: 1.04;
+    --ty: 0.3;
+    --trick-max: 84px;
+  }
+}
+@media (orientation: landscape) and (min-height: 521px) {
+  .trick {
+    --tx: 1.02;
+    --ty: 0.42;
+    --trick-max: 118px;
+  }
+}
+.played-card {
+  --x: 0px;
+  --y: 0px;
+  --r: 0deg;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tw);
+  margin-left: calc(var(--tw) / -2);
+  margin-top: calc(var(--tw) * -0.7);
+  z-index: calc(var(--order) + 1);
+  transform: translate(var(--x), var(--y)) rotate(var(--r));
+  animation: play-in var(--t-base) var(--ease-out) both;
+}
+.played-card .card {
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.2),
+    0 6px 14px rgb(0 0 0 / 0.28);
+}
+.from-0 {
+  --y: calc(var(--tw) * 1.4 * var(--ty));
+  --r: -2deg;
+  --fx: 0px;
+  --fy: 60cqh;
+}
+.from-2 {
+  --y: calc(var(--tw) * -1.4 * var(--ty));
+  --r: 3deg;
+  --fx: 0px;
+  --fy: -60cqh;
+}
+.from-3 {
+  --x: calc(var(--tw) * -1 * var(--tx));
+  --r: -5deg;
+  --fx: -55cqw;
+  --fy: 0px;
+}
+.from-1 {
+  --x: calc(var(--tw) * var(--tx));
+  --r: 4deg;
+  --fx: 55cqw;
+  --fy: 0px;
+}
+.to-0 {
+  --cx: 0px;
+  --cy: 70cqh;
+}
+.to-2 {
+  --cx: 0px;
+  --cy: -70cqh;
+}
+.to-3 {
+  --cx: -60cqw;
+  --cy: 0px;
+}
+.to-1 {
+  --cx: 60cqw;
+  --cy: 0px;
+}
+.played-card.is-winner .card {
+  box-shadow:
+    0 0 0 2px var(--brass),
+    0 0 20px rgb(235 211 154 / 0.55),
+    0 6px 14px rgb(0 0 0 / 0.28);
+}
+.trick.is-complete .played-card {
+  animation:
+    play-in var(--t-base) var(--ease-out) both,
+    collect var(--t-slow) var(--ease-in) calc(var(--pace-hold) - var(--t-slow) - 60ms) forwards;
+}
+
+/* Shuffle */
+.shuffle-stack {
+  position: relative;
+  width: clamp(56px, 22cqw, 92px);
+  aspect-ratio: 5 / 7;
+}
+.shuffle-stack .card {
+  position: absolute;
+  inset: 0;
+  box-shadow: var(--shadow-lift);
+}
+.shuffle-stack .card:nth-child(1) {
+  animation: riffle-left 600ms var(--ease-out) both;
+}
+.shuffle-stack .card:nth-child(2) {
+  animation: riffle-right 600ms var(--ease-out) 80ms both;
+}
+.shuffle-stack .card:nth-child(3) {
+  animation: settle 600ms var(--ease-out) 160ms both;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-34vh) scale(0.6) rotate(-8deg);
+  }
+}
+@keyframes play-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--fx), var(--fy)) rotate(0deg) scale(0.92);
+  }
+}
+@keyframes collect {
+  to {
+    opacity: 0;
+    transform: translate(var(--cx), var(--cy)) scale(0.85);
+  }
+}
+@keyframes riffle-left {
+  40% {
+    transform: translateX(-60%) rotate(-10deg);
+  }
+}
+@keyframes riffle-right {
+  40% {
+    transform: translateX(60%) rotate(10deg);
+  }
+}
+@keyframes settle {
+  from {
+    transform: translateY(-20%);
+    opacity: 0;
+  }
+}
+@keyframes shake {
+  20% {
+    translate: -5px 0;
+  }
+  45% {
+    translate: 5px 0;
+  }
+  70% {
+    translate: -3px 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes turn-pulse {
+  50% {
+    box-shadow:
+      0 0 0 6px rgb(210 181 122 / 0.12),
+      0 0 24px rgb(210 181 122 / 0.55);
+  }
+}
+@keyframes winner-flash {
+  0%,
+  60% {
+    box-shadow:
+      0 0 0 4px var(--brass-bright),
+      0 0 30px rgb(235 211 154 / 0.8);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- Reduced motion: short fades, same hold times ---------- */
+.reduce-motion .hand.dealing .hand-card,
+.reduce-motion .played-card,
+.reduce-motion .shuffle-stack .card,
+.reduce-motion .panel,
+.reduce-motion .home,
+.reduce-motion .toast,
+.reduce-motion .ten-chip,
+.reduce-motion .ten-slot.filled,
+.reduce-motion .hukum-chip {
+  animation: fade-in var(--t-fast) linear both;
+  animation-delay: 0ms;
+}
+.reduce-motion .trick.is-complete .played-card {
+  animation:
+    fade-in var(--t-fast) linear both,
+    fade-out var(--t-fast) linear calc(var(--pace-hold) - var(--t-fast) - 60ms) forwards;
+}
+.reduce-motion .seat.is-turn .avatar,
+.reduce-motion .seat.is-winner .avatar,
+.reduce-motion .hand-card.shake {
+  animation: none;
+}
+.reduce-motion .hand-card {
+  transition: none;
+}

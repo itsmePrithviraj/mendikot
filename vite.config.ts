@@ -6,14 +6,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.svg", "apple-touch-icon.png", "card-back.svg"],
+      includeAssets: ["favicon.svg", "icon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Mendikot — The four tens",
         short_name: "Mendikot",
         description:
           "A little strategy. A little sheepishness. Play the four-tens card game.",
-        theme_color: "#143e35",
-        background_color: "#102e28",
+        theme_color: "#17433a",
+        background_color: "#0b1f1a",
         display: "standalone",
         orientation: "any",
         start_url: "./",
@@ -41,7 +41,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,m4a}"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
       },

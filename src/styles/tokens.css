@@ -1,0 +1,85 @@
+:root {
+  /* surfaces */
+  --room: #0b1f1a;
+  --felt-900: #0f2f28;
+  --felt-700: #17433a;
+  --felt-500: #1f5546;
+  --rim: #4a3a26;
+  --rim-light: #6b5537;
+  /* paper */
+  --ivory: #faf5e8;
+  --ivory-dim: #e9e2cf;
+  --ivory-ink: #1d2422;
+  --ivory-ink-2: #5d635c;
+  --oxblood: #a3252f;
+  /* metal */
+  --brass: #d2b57a;
+  --brass-bright: #ebd39a;
+  --brass-deep: #a98b4f;
+  /* text on felt */
+  --on-felt: #f3eee0;
+  --on-felt-2: #b4c8bb;
+  --on-felt-3: #7e9a8c;
+  --hairline: rgb(255 255 255 / 0.1);
+  --hairline-strong: rgb(255 255 255 / 0.18);
+  --wash: rgb(255 255 255 / 0.05);
+  --scrim: rgb(6 22 18 / 0.72);
+  --focus: #f2c978;
+
+  /* type */
+  --font-ui: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: clamp(20px, 1.2vw + 14px, 26px);
+  --fs-display: clamp(28px, 3vw + 14px, 46px);
+
+  /* space */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* elevation */
+  --shadow-card: 0 1px 1px rgb(0 0 0 / 0.22), 0 3px 8px rgb(0 0 0 / 0.2);
+  --shadow-lift: 0 12px 24px rgb(0 0 0 / 0.36), 0 2px 4px rgb(0 0 0 / 0.2);
+  --shadow-sheet: 0 -10px 40px rgb(0 0 0 / 0.45);
+
+  /* safe areas: the only place env() is referenced */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* motion */
+  --t-fast: 120ms;
+  --t-base: 240ms;
+  --t-slow: 420ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.5, 1);
+  /* Must match the trick-complete wait in App (relaxed / quick). */
+  --pace-hold: 1700ms;
+
+  --felt: radial-gradient(
+    ellipse 80% 70% at 50% 44%,
+    var(--felt-500),
+    var(--felt-700) 58%,
+    var(--felt-900)
+  );
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.pace-quick {
+  --pace-hold: 850ms;
+}

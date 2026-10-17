@@ -1,0 +1,187 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--room);
+  color: var(--on-felt);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: lining-nums;
+}
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+svg {
+  display: block;
+}
+.glyph {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  fill: currentColor;
+}
+.card-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-primary {
+  color: #2a2010;
+  background: linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, #c4a467);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 1px 0 rgb(0 0 0 / 0.25),
+    0 6px 16px rgb(0 0 0 / 0.28);
+}
+.btn-primary:disabled {
+  color: var(--on-felt-2);
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.btn-ghost {
+  color: var(--on-felt);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover {
+    background: var(--wash);
+  }
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+}
+.btn .glyph,
+.btn svg {
+  width: 18px;
+  height: 18px;
+}
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-pill);
+  color: var(--on-felt-2);
+  transition: background var(--t-fast);
+}
+.icon-btn svg {
+  width: 21px;
+  height: 21px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    color: var(--on-felt);
+    background: var(--wash);
+  }
+}
+
+/* Reduced motion (system preference or the in-app switch; App sets the
+   class for both). Transitions stop; keyframes are swapped for short fades in
+   cards.css. Information and hold times are never removed. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  transition-duration: 0ms !important;
+}
+
+/* iOS haptics: an invisible native switch covering its button (HapticSwitch). */
+.haptic-switch {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  /* Undo the input reset above: without native appearance there is no tick. */
+  -webkit-appearance: auto;
+  appearance: auto;
+  clip-path: inset(0 round var(--r-pill));
+}
+.hand-card .haptic-switch {
+  clip-path: none;
+}

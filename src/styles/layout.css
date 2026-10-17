@@ -1,0 +1,186 @@
+/*
+ * Three layout modes, one DOM.
+ *   P  portrait                       bar / score / felt / hand / actions
+ *   LS landscape, short (phones)      brand·score·tools / felt / hand·actions
+ *   W  landscape, tall (tablet, desk) bar over a framed table
+ */
+.app {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--felt), var(--felt-700);
+  isolation: isolate;
+  overflow: hidden;
+}
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-size: 256px;
+  mix-blend-mode: soft-light;
+  opacity: 0.35;
+}
+
+/* ---------- P: portrait (default) ---------- */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  height: 52px;
+  padding: 0 var(--s1) 0 var(--s4);
+}
+.table {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  min-height: 0;
+  min-width: 0;
+}
+.score {
+  height: 48px;
+  padding: 0 var(--s4);
+}
+.felt {
+  padding: var(--s2) var(--s2) 0;
+}
+.hand {
+  padding: var(--s2) var(--s2) 0;
+}
+.actions {
+  min-height: 72px;
+  padding: var(--s3) var(--s4);
+}
+.app[data-screen="home"] .table {
+  grid-template-rows: minmax(0, 1fr);
+}
+.app[data-phase="complete"] .hand {
+  display: none;
+}
+
+/* ---------- LS: landscape phones ---------- */
+@media (orientation: landscape) and (max-height: 520px) {
+  .app {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 46px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand score tools"
+      "felt felt felt"
+      "hand hand hand";
+  }
+  .bar,
+  .table {
+    display: contents;
+  }
+  .wordmark {
+    grid-area: brand;
+    padding-left: var(--s4);
+  }
+  .table-tools {
+    grid-area: tools;
+    justify-self: end;
+    padding-right: var(--s1);
+  }
+  .score {
+    grid-area: score;
+    height: auto;
+    justify-self: center;
+    width: min(100%, 520px);
+    padding: 0 var(--s4);
+  }
+  .felt {
+    grid-area: felt;
+    padding: 0 var(--s3);
+  }
+  .hand {
+    grid-area: hand;
+    padding: var(--s1) var(--s3) var(--s2);
+    align-self: end;
+  }
+  /* Play sits at the felt's bottom-right so the hand gets the full width. */
+  .actions {
+    grid-area: felt;
+    z-index: 4;
+    min-height: 0;
+    align-self: end;
+    justify-self: end;
+    padding: 0 var(--s3) 2px 0;
+  }
+  .app[data-screen="home"] .home {
+    grid-area: 2 / 1 / -1 / -1;
+  }
+  .app[data-phase="complete"] .felt {
+    grid-row: 2 / -1;
+  }
+}
+
+/* ---------- W: tablets in landscape and desktops ---------- */
+@media (orientation: landscape) and (min-height: 521px) {
+  .app {
+    --table-w: min(100%, 1280px, calc((100dvh - 96px) * 1.62));
+    grid-template-rows: 60px minmax(0, 1fr);
+    justify-items: center;
+    padding: var(--safe-top) calc(var(--safe-right) + var(--s5)) calc(var(--safe-bottom) + var(--s5))
+      calc(var(--safe-left) + var(--s5));
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 45%, #143a31, transparent 75%),
+      var(--room);
+  }
+  .app::before {
+    opacity: 0.2;
+  }
+  .bar {
+    width: var(--table-w);
+    height: 60px;
+    padding: 0 0 0 var(--s1);
+  }
+  .table {
+    width: var(--table-w);
+    height: min(100%, 880px);
+    align-self: center;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    border-radius: 28px;
+    background: var(--felt), var(--felt-700);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      0 0 0 7px var(--rim),
+      0 0 0 8px var(--rim-light),
+      0 30px 80px rgb(0 0 0 / 0.55),
+      inset 0 0 0 1px var(--hairline),
+      inset 0 0 90px rgb(0 0 0 / 0.38);
+    isolation: isolate;
+  }
+  .table::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image: var(--noise);
+    background-size: 256px;
+    mix-blend-mode: soft-light;
+    opacity: 0.35;
+  }
+  .score {
+    height: 64px;
+    padding: 0 var(--s5);
+  }
+  .felt {
+    padding: var(--s2) var(--s5) 0;
+  }
+  .hand {
+    padding: var(--s3) var(--s5) 0;
+  }
+  .actions {
+    min-height: 84px;
+    padding: var(--s4) var(--s5);
+  }
+}

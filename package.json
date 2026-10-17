@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "tsc -b",
+    "icons": "node scripts/render-icons.mjs",
     "native:sync": "npm run build && cap sync",
     "test:e2e": "playwright test",
     "format": "prettier --write src tests *.ts *.json"

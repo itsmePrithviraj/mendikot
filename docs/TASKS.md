@@ -12,6 +12,8 @@
 - [ ] Installable PWA, offline practice, deferred app updates
 - [ ] Automated game tests, responsive browser checks, refresh/rotation/offline checks
 
+UI revamp (branch `ui-revamp`): new token system and three layout modes, redrawn SVG card faces/back/courts, sheep medallion on 10s, bottom-sheet menu and rules, haptics preference, regenerated icons, and an e2e geometry matrix over nine viewports.
+
 ## Milestone 2 — play with friends
 
 - [ ] Confirm house rules and implement chosen hukum variations
