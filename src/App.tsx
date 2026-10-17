@@ -27,7 +27,7 @@ import {
   winnerOf,
 } from "./game/engine";
 import type { Card, Game, Mode, Suit } from "./game/engine";
-import { canVibrate, useHaptics } from "./hooks/useHaptics";
+import { canHaptic, canSwitchTick, useHaptics } from "./hooks/useHaptics";
 import { useInstallPrompt } from "./hooks/useInstallPrompt";
 import { useSound } from "./hooks/useSound";
 import { canFullscreen, toggleFullscreen, useSystemFlags } from "./hooks/useSystemFlags";
@@ -58,8 +58,9 @@ function App() {
     [hint, setHint] = useState<{ id: string; status: Status } | null>(null);
   const { offline, visible, fullscreen, systemReduced } = useSystemFlags();
   const install = useInstallPrompt(() => setSheet(null));
-  const tick = useSound(prefs.sound);
+  const sound = useSound(prefs.sound);
   const tap = useHaptics(prefs.haptics);
+  const switchTicks = prefs.haptics && canSwitchTick();
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
@@ -85,6 +86,10 @@ function App() {
     );
     return () => clearTimeout(timer);
   }, [stage, reduced]);
+  useEffect(() => {
+    if (stage === "deal") sound("deal");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
   // Bot turns and trick collection. Timings are unchanged from the original
   // table; CSS --pace-hold mirrors the trick-complete wait.
   useEffect(() => {
@@ -95,6 +100,7 @@ function App() {
       callback = () => {
         setGame(collectTrick(game));
         setSelected(null);
+        sound("collect");
       };
       wait = prefs.speed === "quick" ? 850 : 1700;
     } else if (game.turn !== 0 && game.phase === "choosing-trump") {
@@ -106,7 +112,7 @@ function App() {
     } else if (game.turn !== 0 && game.phase === "playing") {
       callback = () => {
         setGame(playCard(game, game.turn, chooseBotCard(game).id));
-        tick();
+        sound("place");
       };
     }
     if (!callback) return;
@@ -134,14 +140,14 @@ function App() {
     setSelected(null);
     setStage("shuffle");
     setSheet(null);
-    tick();
+    sound("shuffle");
   }
   function play() {
     if (!game || !canPlay || !selected) return;
     setGame(playCard(game, 0, selected));
     setSelected(null);
     setHint(null);
-    tick();
+    sound("place");
     tap(12);
   }
   function select(card: Card) {
@@ -153,14 +159,13 @@ function App() {
       return;
     }
     setSelected(selected === card.id ? null : card.id);
-    tick();
+    sound("select");
   }
   function setTrump(suit: Suit) {
     if (!game || game.phase !== "choosing-trump" || game.turn !== 0) return;
     setGame(chooseTrump(game, 0, suit));
     setStage("deal");
     setSelected(null);
-    tick();
   }
   async function installApp() {
     if (!(await install())) setSheet("install");
@@ -200,10 +205,11 @@ function App() {
               dealing={stage === "deal"}
               shaking={hint?.id ?? null}
               canPlay={canPlay}
+              haptic={switchTicks}
               onSelect={select}
               onPlay={play}
             />
-            <ActionBar phase={phase} canPlay={canPlay} onPlay={play} />
+            <ActionBar phase={phase} canPlay={canPlay} haptic={switchTicks} onPlay={play} />
           </>
         ) : (
           <Home mode={mode} onMode={setMode} onStart={() => start()} />
@@ -230,7 +236,7 @@ function App() {
           <MenuSheet
             prefs={prefs}
             setPrefs={setPrefs}
-            haptics={canVibrate()}
+            haptics={canHaptic()}
             fullscreen={fullscreen}
             canFullscreen={canFullscreen()}
             hasGame={!!game}

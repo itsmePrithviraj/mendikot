@@ -57,6 +57,7 @@ Production hosting must use HTTPS (localhost also works). Visit online once, all
 - `src/state/` — save/preference persistence (same keys and shapes as before) and the status line copy; `src/hooks/` — browser flags, install prompt, sound, haptics, dialogs.
 - `src/styles/` — `tokens.css` (palette, type, spacing, motion, safe areas), `base.css`, `layout.css` (portrait, landscape-phone and wide modes), `table.css`, `cards.css`, `dialogs.css`.
 - `public/icon.svg`, `icon-maskable.svg`, `favicon.svg` — vector icons; `npm run icons` rasterises the PNGs with Playwright Chromium.
+- `public/sounds/` — card sounds (slide, place, shove, fan, shuffle) from Kenney's [Casino Audio](https://kenney.nl/assets/casino-audio) pack (CC0), with lead-in silence trimmed, loudness levelled and re-encoded as mono AAC so iOS can play them.
 - `docs/TASKS.md` — milestones and remaining implementation tasks.
 - `docs/IMAGE-PROMPTS.md` — concise prompts for AI reference images.
 - `docs/orientation-reference.html` — the user-approved early layout exploration.

@@ -1,6 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from "react";
 import type { Card } from "../../game/engine";
 import { cardLabel } from "../../game/engine";
+import { HapticSwitch } from "../HapticSwitch";
 import { CardFace } from "./CardFace";
 
 export function HandCard({
@@ -11,6 +12,7 @@ export function HandCard({
   selected,
   disabled,
   shaking,
+  haptic,
   onSelect,
   onKeyDown,
 }: {
@@ -21,6 +23,7 @@ export function HandCard({
   selected: boolean;
   disabled: boolean;
   shaking: boolean;
+  haptic: boolean;
   onSelect: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void;
 }) {
@@ -37,6 +40,7 @@ export function HandCard({
       data-card={card.id}
     >
       <CardFace card={card} />
+      {haptic && <HapticSwitch disabled={disabled} />}
     </button>
   );
 }

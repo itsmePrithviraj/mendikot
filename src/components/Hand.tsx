@@ -11,6 +11,7 @@ export function Hand({
   dealing,
   shaking,
   canPlay,
+  haptic,
   onSelect,
   onPlay,
 }: {
@@ -22,6 +23,7 @@ export function Hand({
   dealing: boolean;
   shaking: string | null;
   canPlay: boolean;
+  haptic: boolean;
   onSelect: (card: Card) => void;
   onPlay: () => void;
 }) {
@@ -62,6 +64,8 @@ export function Hand({
             selected={selected === card.id}
             disabled={disabled}
             shaking={shaking === card.id}
+            // Matches the vibration on a refused card in App's select().
+            haptic={haptic && myTurn && !isLegal}
             onSelect={() => onSelect(card)}
             onKeyDown={(e) => onKeyDown(card, e)}
           />

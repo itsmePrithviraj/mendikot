@@ -9,6 +9,7 @@ import {
   Wind,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { canVibrate } from "../../hooks/useHaptics";
 import type { Preferences } from "../../state/prefs";
 
 function Switch({
@@ -91,7 +92,7 @@ export function MenuSheet({
         <Switch
           icon={<Volume2 size={s} strokeWidth={1.75} />}
           label="Card sounds"
-          detail="A soft tick when a card moves"
+          detail="Cards slide, snap and shuffle"
           checked={prefs.sound}
           onChange={(sound) => setPrefs({ sound })}
         />
@@ -99,7 +100,7 @@ export function MenuSheet({
           <Switch
             icon={<Vibrate size={s} strokeWidth={1.75} />}
             label="Haptics"
-            detail="A light tap on play and capture"
+            detail={canVibrate() ? "A light tap on play and capture" : "A light tap when you play"}
             checked={prefs.haptics}
             onChange={(on) => setPrefs({ haptics: on })}
           />

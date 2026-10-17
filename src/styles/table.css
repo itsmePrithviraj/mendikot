@@ -508,6 +508,7 @@
   justify-content: center;
 }
 .play-btn {
+  position: relative;
   width: min(100%, 360px);
   min-height: 50px;
 }
