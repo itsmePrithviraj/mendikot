@@ -74,6 +74,7 @@
 }
 /* Symbol internals read context through inherited custom properties. */
 .sheep-fleece {
+  fill: var(--fleece-color, currentColor);
   fill-opacity: var(--fleece, 0.2);
 }
 .sheep-eye {

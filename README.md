@@ -20,7 +20,8 @@ npm test       # rules, both modes, conservation, scoring, corrupt saves
 npm run check # TypeScript
 npm run build # production bundle + manifest + service worker
 npx playwright install chromium
-npm run test:e2e # production browser, rotation, persistence and offline checks
+npm run test:e2e # production browser, rotation, persistence, offline and a 9-viewport layout matrix
+npm run icons    # regenerate PNG icons from public/*.svg
 ```
 
 ## Implemented
@@ -50,9 +51,12 @@ Production hosting must use HTTPS (localhost also works). Visit online once, all
 
 - `src/game/engine.ts` — immutable, UI-independent rules and bot decisions.
 - `src/game/engine.test.ts` — deterministic rule tests and complete-deal simulations.
-- `src/components/Cards.tsx` — card faces, suit marks, sheep and backs.
-- `src/App.tsx` — practice game, lifecycle, persistence and controls.
-- `src/styles.css` — layout, tokens, both orientations and animation.
+- `src/App.tsx` — orchestrator: game state, bot/collect timers, sheets.
+- `src/components/cards/` — one hidden SVG sprite (`CardDefs`) with suit glyphs, sheep, court crests and the woven back; `CardFace` composes full pip layouts (`cardLayouts.ts`) or a bold compact face, chosen by a container query on rendered width.
+- `src/components/` — top bar, scoreboard, seats, trick, hand, action bar, toasts; `panels/` (home, mode picker, choose hukum, result) and `sheets/` (rules, menu, new deal, install, last trick — native `<dialog>` bottom sheets).
+- `src/state/` — save/preference persistence (same keys and shapes as before) and the status line copy; `src/hooks/` — browser flags, install prompt, sound, haptics, dialogs.
+- `src/styles/` — `tokens.css` (palette, type, spacing, motion, safe areas), `base.css`, `layout.css` (portrait, landscape-phone and wide modes), `table.css`, `cards.css`, `dialogs.css`.
+- `public/icon.svg`, `icon-maskable.svg`, `favicon.svg` — vector icons; `npm run icons` rasterises the PNGs with Playwright Chromium.
 - `docs/TASKS.md` — milestones and remaining implementation tasks.
 - `docs/IMAGE-PROMPTS.md` — concise prompts for AI reference images.
 - `docs/orientation-reference.html` — the user-approved early layout exploration.
