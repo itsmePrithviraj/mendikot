@@ -30,7 +30,11 @@ import type { Card, Game, Mode, Suit } from "./game/engine";
 import { canHaptic, canSwitchTick, useHaptics } from "./hooks/useHaptics";
 import { useInstallPrompt } from "./hooks/useInstallPrompt";
 import { useSound } from "./hooks/useSound";
-import { canFullscreen, toggleFullscreen, useSystemFlags } from "./hooks/useSystemFlags";
+import {
+  canFullscreen,
+  toggleFullscreen,
+  useSystemFlags,
+} from "./hooks/useSystemFlags";
 import { readPrefs, writePrefs } from "./state/prefs";
 import type { Preferences } from "./state/prefs";
 import { readGame, writeGame } from "./state/save";
@@ -58,7 +62,7 @@ function App() {
     [hint, setHint] = useState<{ id: string; status: Status } | null>(null);
   const { offline, visible, fullscreen, systemReduced } = useSystemFlags();
   const install = useInstallPrompt(() => setSheet(null));
-  const sound = useSound(prefs.sound);
+  const sound = useSound(prefs.sound, prefs.volume);
   const tap = useHaptics(prefs.haptics);
   const switchTicks = prefs.haptics && canSwitchTick();
   const {
@@ -72,7 +76,8 @@ function App() {
   const choosing = game?.phase === "choosing-trump",
     playing = game?.phase === "playing",
     myTurn = !!game && playing && game.turn === 0 && stage === "ready";
-  const setPrefs = (update: Partial<Preferences>) => setPrefsState((p) => ({ ...p, ...update }));
+  const setPrefs = (update: Partial<Preferences>) =>
+    setPrefsState((p) => ({ ...p, ...update }));
 
   useEffect(() => {
     if (game) setSaveError(!writeGame(game));
@@ -153,7 +158,10 @@ function App() {
   function select(card: Card) {
     if (myTurn && !legal.has(card.id) && game?.trick.length) {
       const led = game.trick[0].card.suit;
-      setHint({ id: card.id, status: { text: "Follow", suit: led, mine: true } });
+      setHint({
+        id: card.id,
+        status: { text: "Follow", suit: led, mine: true },
+      });
       setSelected(null);
       tap(10);
       return;
@@ -173,7 +181,11 @@ function App() {
 
   const status = hint?.status ?? statusOf(game, stage);
   const hand = game?.hands[0] ?? [];
-  const phase = choosing ? "choosing" : game?.phase === "complete" ? "complete" : "playing";
+  const phase = choosing
+    ? "choosing"
+    : game?.phase === "complete"
+      ? "complete"
+      : "playing";
   return (
     <div
       className={`app${reduced ? " reduce-motion" : ""}${prefs.speed === "quick" ? " pace-quick" : ""}`}
@@ -182,7 +194,11 @@ function App() {
       data-stage={stage}
     >
       <CardDefs />
-      <TopBar offline={offline} onHelp={() => setSheet("rules")} onMenu={() => setSheet("menu")} />
+      <TopBar
+        offline={offline}
+        onHelp={() => setSheet("rules")}
+        onMenu={() => setSheet("menu")}
+      />
       <main className="table" aria-label="Mendikot game table">
         {game ? (
           <>
@@ -209,7 +225,12 @@ function App() {
               onSelect={select}
               onPlay={play}
             />
-            <ActionBar phase={phase} canPlay={canPlay} haptic={switchTicks} onPlay={play} />
+            <ActionBar
+              phase={phase}
+              canPlay={canPlay}
+              haptic={switchTicks}
+              onPlay={play}
+            />
           </>
         ) : (
           <Home mode={mode} onMode={setMode} onStart={() => start()} />
@@ -220,7 +241,11 @@ function App() {
         needRefresh={needRefresh}
         onUpdate={() => void updateServiceWorker(true)}
       />
-      <Sheet open={!!sheet} title={sheet ? SHEET_TITLES[sheet] : ""} onClose={() => setSheet(null)}>
+      <Sheet
+        open={!!sheet}
+        title={sheet ? SHEET_TITLES[sheet] : ""}
+        onClose={() => setSheet(null)}
+      >
         {sheet === "rules" && <RulesSheet />}
         {sheet === "install" && <InstallSheet />}
         {sheet === "last" && game && <LastTrickSheet game={game} />}
@@ -244,6 +269,7 @@ function App() {
             onInstall={() => void installApp()}
             onNewDeal={() => setSheet("new")}
             onRules={() => setSheet("rules")}
+            onVolumePreview={() => sound("place")}
           />
         )}
       </Sheet>

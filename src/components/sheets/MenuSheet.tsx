@@ -8,7 +8,7 @@ import {
   Volume2,
   Wind,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { canVibrate } from "../../hooks/useHaptics";
 import type { Preferences } from "../../state/prefs";
 
@@ -55,7 +55,11 @@ function Action({
   disabled?: boolean;
 }) {
   return (
-    <button className="menu-row menu-action" onClick={onClick} disabled={disabled}>
+    <button
+      className="menu-row menu-action"
+      onClick={onClick}
+      disabled={disabled}
+    >
       <span className="menu-icon">{icon}</span>
       <span className="menu-copy">{label}</span>
     </button>
@@ -73,6 +77,7 @@ export function MenuSheet({
   onInstall,
   onNewDeal,
   onRules,
+  onVolumePreview,
 }: {
   prefs: Preferences;
   setPrefs: (update: Partial<Preferences>) => void;
@@ -84,6 +89,7 @@ export function MenuSheet({
   onInstall: () => void;
   onNewDeal: () => void;
   onRules: () => void;
+  onVolumePreview: () => void;
 }) {
   const s = 20;
   return (
@@ -96,11 +102,36 @@ export function MenuSheet({
           checked={prefs.sound}
           onChange={(sound) => setPrefs({ sound })}
         />
+        {prefs.sound && (
+          <label className="menu-row volume-row">
+            <span className="menu-copy">
+              Volume
+              <small>{Math.round(prefs.volume * 100)}%</small>
+            </span>
+            <input
+              type="range"
+              className="volume"
+              min={0}
+              max={1}
+              step={0.05}
+              value={prefs.volume}
+              style={{ "--fill": `${prefs.volume * 100}%` } as CSSProperties}
+              onChange={(e) => setPrefs({ volume: Number(e.target.value) })}
+              // Play a card once the level settles rather than on every step of a drag.
+              onPointerUp={onVolumePreview}
+              onKeyUp={onVolumePreview}
+            />
+          </label>
+        )}
         {haptics && (
           <Switch
             icon={<Vibrate size={s} strokeWidth={1.75} />}
             label="Haptics"
-            detail={canVibrate() ? "A light tap on play and capture" : "A light tap when you play"}
+            detail={
+              canVibrate()
+                ? "A light tap on play and capture"
+                : "A light tap when you play"
+            }
             checked={prefs.haptics}
             onChange={(on) => setPrefs({ haptics: on })}
           />
@@ -119,7 +150,10 @@ export function MenuSheet({
           </span>
           <div className="segmented" role="radiogroup" aria-label="Table pace">
             {(["relaxed", "quick"] as const).map((speed) => (
-              <label key={speed} className={prefs.speed === speed ? "active" : ""}>
+              <label
+                key={speed}
+                className={prefs.speed === speed ? "active" : ""}
+              >
                 <input
                   type="radio"
                   name="pace"
@@ -165,8 +199,8 @@ export function MenuSheet({
         />
       </div>
       <p className="small-print">
-        Turn your phone any time. Your game stays exactly where it is. Device motion preferences
-        are also respected.
+        Turn your phone any time. Your game stays exactly where it is. Device
+        motion preferences are also respected.
       </p>
     </>
   );

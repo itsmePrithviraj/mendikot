@@ -6,6 +6,8 @@ export interface Preferences {
   reducedMotion: boolean;
   /** Added in the revamp; older saves lack it and default to on. */
   haptics: boolean;
+  /** Master sound level, 0–1. Older saves lack it and play at full level. */
+  volume: number;
 }
 
 export const DEFAULT_PREFS: Preferences = {
@@ -13,6 +15,7 @@ export const DEFAULT_PREFS: Preferences = {
   speed: "relaxed",
   reducedMotion: false,
   haptics: true,
+  volume: 1,
 };
 
 export function readPrefs(): Preferences {
@@ -23,6 +26,10 @@ export function readPrefs(): Preferences {
       speed: data.speed === "quick" ? "quick" : "relaxed",
       reducedMotion: data.reducedMotion === true,
       haptics: data.haptics !== false,
+      volume:
+        typeof data.volume === "number" && data.volume >= 0 && data.volume <= 1
+          ? data.volume
+          : 1,
     };
   } catch {
     return { ...DEFAULT_PREFS };

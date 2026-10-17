@@ -19,10 +19,22 @@ const STALE_MS = 150;
 const UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"] as const;
 
 let audio: AudioContext | null = null;
+let master: GainNode | null = null;
+let level = 1;
 const buffers = new Map<string, Promise<AudioBuffer | null>>();
 const lastTake = new Map<Sound, number>();
 
 const context = () => (audio ??= new AudioContext());
+
+/** Every sound runs through one gain node so the volume slider scales them all. */
+function output(ctx: AudioContext) {
+  if (!master) {
+    master = ctx.createGain();
+    master.gain.value = level;
+    master.connect(ctx.destination);
+  }
+  return master;
+}
 
 function load(file: string) {
   let buffer = buffers.get(file);
@@ -42,7 +54,8 @@ function load(file: string) {
 function playSound(sound: Sound) {
   const { files, volume } = SOUNDS[sound];
   let take = Math.floor(Math.random() * files.length);
-  if (files.length > 1 && take === lastTake.get(sound)) take = (take + 1) % files.length;
+  if (files.length > 1 && take === lastTake.get(sound))
+    take = (take + 1) % files.length;
   lastTake.set(sound, take);
   const ctx = context();
   void ctx.resume().catch(() => {});
@@ -54,13 +67,17 @@ function playSound(sound: Sound) {
     source.buffer = buffer;
     source.playbackRate.value = 0.96 + Math.random() * 0.08;
     gain.gain.value = volume;
-    source.connect(gain).connect(ctx.destination);
+    source.connect(gain).connect(output(ctx));
     source.start();
   });
 }
 
 /** Real card sounds. Silent unless enabled; failures are ignored. */
-export function useSound(enabled: boolean) {
+export function useSound(enabled: boolean, volume = 1) {
+  useEffect(() => {
+    level = volume;
+    if (master) master.gain.value = volume;
+  }, [volume]);
   useEffect(() => {
     if (!enabled) return;
     try {
@@ -79,8 +96,12 @@ export function useSound(enabled: boolean) {
         .catch(() => {});
     };
     const release = () =>
-      UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, unlock, true));
-    UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, unlock, true));
+      UNLOCK_EVENTS.forEach((type) =>
+        window.removeEventListener(type, unlock, true),
+      );
+    UNLOCK_EVENTS.forEach((type) =>
+      window.addEventListener(type, unlock, true),
+    );
     return release;
   }, [enabled]);
   return function sound(name: Sound) {
