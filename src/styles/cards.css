@@ -97,6 +97,15 @@
     display: none;
   }
 }
+/* Hand cards overlap, so the bold compact index wins for longer. */
+@container card (min-width: 70px) and (max-width: 89.98px) {
+  .hand-card .face-full {
+    display: none;
+  }
+  .hand-card .face-compact {
+    display: inline;
+  }
+}
 
 /* Back */
 .back-paper {
@@ -141,7 +150,7 @@
 .hand {
   --gap: 6px;
   --cols: 7;
-  --card-w: clamp(44px, 18cqw, 104px);
+  --card-w: clamp(44px, 19.5cqw, 104px);
   --step: min(
     calc(var(--card-w) + 4px),
     calc((100cqw - var(--card-w) - 1px) / (var(--cols) - 1))
@@ -195,7 +204,6 @@
 }
 .hand-card.selected {
   --lift: calc(var(--card-w) * -0.2);
-  z-index: 5;
 }
 .hand-card.selected .card {
   box-shadow:
@@ -218,6 +226,9 @@
 }
 .hand-card.shake {
   animation: shake var(--t-base) var(--ease-out);
+}
+.app[data-stage="shuffle"] .hand-card {
+  opacity: 0;
 }
 .hand.dealing .hand-card {
   animation: deal-in var(--t-slow) var(--ease-out) both;

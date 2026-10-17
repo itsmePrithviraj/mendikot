@@ -73,7 +73,7 @@
     grid-template-areas:
       "brand score tools"
       "felt felt felt"
-      "hand hand actions";
+      "hand hand hand";
   }
   .bar,
   .table {
@@ -104,11 +104,14 @@
     padding: var(--s1) var(--s3) var(--s2);
     align-self: end;
   }
+  /* Play sits at the felt's bottom-right so the hand gets the full width. */
   .actions {
-    grid-area: actions;
+    grid-area: felt;
+    z-index: 4;
     min-height: 0;
     align-self: end;
-    padding: 0 var(--s4) var(--s3) var(--s2);
+    justify-self: end;
+    padding: 0 var(--s3) 2px 0;
   }
   .app[data-screen="home"] .home {
     grid-area: 2 / 1 / -1 / -1;

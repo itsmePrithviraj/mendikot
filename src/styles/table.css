@@ -762,7 +762,9 @@
     margin-top: 0;
   }
   .status {
-    padding: 2px 0 4px;
+    min-height: 52px;
+    align-items: center;
+    padding: 0 var(--s1);
   }
   .turn-status {
     min-height: 28px;
@@ -825,6 +827,12 @@
   }
   .actions-note {
     display: none;
+  }
+  .play-btn {
+    width: auto;
+    min-width: 136px;
+    min-height: 48px;
+    padding: 0 var(--s4);
   }
 }
 
