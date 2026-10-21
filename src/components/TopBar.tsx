@@ -1,4 +1,4 @@
-import { CircleHelp, Menu } from "lucide-react";
+import { CircleHelp, Menu, Users } from "lucide-react";
 import { Sheep } from "./cards";
 
 export function Wordmark() {
@@ -14,15 +14,26 @@ export function TopBar({
   offline,
   onHelp,
   onMenu,
+  onOnline,
 }: {
   offline: boolean;
   onHelp: () => void;
   onMenu: () => void;
+  onOnline?: () => void;
 }) {
   return (
     <header className="bar">
       <Wordmark />
       <nav className="table-tools" aria-label="Game controls">
+        {onOnline && (
+          <button
+            className="icon-btn"
+            onClick={onOnline}
+            aria-label="Play with friends"
+          >
+            <Users strokeWidth={1.75} />
+          </button>
+        )}
         {offline && <span className="offline-pill">Offline</span>}
         <button className="icon-btn" onClick={onHelp} aria-label="How to play">
           <CircleHelp strokeWidth={1.75} />

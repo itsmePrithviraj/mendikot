@@ -1,3 +1,9 @@
+import { lazy, Suspense } from "react";
+import { invitedRoom, rememberedRoom } from "./multiplayer/useRoom";
+const OnlineApp = lazy(() =>
+  import("./multiplayer/OnlineApp").then((m) => ({ default: m.OnlineApp })),
+);
+import { playerGame } from "./game/view";
 import { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { CardDefs } from "./components/cards";
@@ -51,7 +57,7 @@ const SHEET_TITLES: Record<Exclude<SheetKind, null>, string> = {
   last: "Last trick",
 };
 
-function App() {
+function PracticeApp({ onOnline }: { onOnline: () => void }) {
   const [game, setGame] = useState<Game | null>(readGame),
     [mode, setMode] = useState<Mode>(() => readGame()?.mode ?? "cut"),
     [selected, setSelected] = useState<string | null>(null),
@@ -179,7 +185,8 @@ function App() {
     if (!(await install())) setSheet("install");
   }
 
-  const status = hint?.status ?? statusOf(game, stage);
+  const view = game ? playerGame(game, 0) : null;
+  const status = hint?.status ?? statusOf(view, stage);
   const hand = game?.hands[0] ?? [];
   const phase = choosing
     ? "choosing"
@@ -198,13 +205,14 @@ function App() {
         offline={offline}
         onHelp={() => setSheet("rules")}
         onMenu={() => setSheet("menu")}
+        onOnline={onOnline}
       />
       <main className="table" aria-label="Mendikot game table">
-        {game ? (
+        {game && view ? (
           <>
-            <Scoreboard game={game} />
+            <Scoreboard game={view} />
             <Table
-              game={game}
+              game={view}
               stage={stage}
               status={status}
               onChoose={setTrump}
@@ -233,7 +241,12 @@ function App() {
             />
           </>
         ) : (
-          <Home mode={mode} onMode={setMode} onStart={() => start()} />
+          <Home
+            onOnline={onOnline}
+            mode={mode}
+            onMode={setMode}
+            onStart={() => start()}
+          />
         )}
       </main>
       <Toasts
@@ -248,7 +261,7 @@ function App() {
       >
         {sheet === "rules" && <RulesSheet />}
         {sheet === "install" && <InstallSheet />}
-        {sheet === "last" && game && <LastTrickSheet game={game} />}
+        {sheet === "last" && view && <LastTrickSheet game={view} />}
         {sheet === "new" && (
           <NewDealSheet
             mode={mode}
@@ -276,4 +289,23 @@ function App() {
     </div>
   );
 }
-export default App;
+export default function App() {
+  const [online, setOnline] = useState(
+    () => !!invitedRoom() || !!rememberedRoom(),
+  );
+  return online ? (
+    <Suspense
+      fallback={
+        <div className="app">
+          <p className="loading-game" role="status">
+            Opening the table…
+          </p>
+        </div>
+      }
+    >
+      <OnlineApp onBack={() => setOnline(false)} />
+    </Suspense>
+  ) : (
+    <PracticeApp onOnline={() => setOnline(true)} />
+  );
+}

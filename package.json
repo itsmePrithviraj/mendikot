@@ -13,7 +13,12 @@
     "icons": "node scripts/render-icons.mjs",
     "native:sync": "npm run build && cap sync",
     "test:e2e": "playwright test",
-    "format": "prettier --write src tests *.ts *.json"
+    "format": "prettier --write src tests *.ts *.json",
+    "cf:types": "wrangler types",
+    "check:server": "npm run cf:types && tsc -p server/tsconfig.json",
+    "dev:online": "npm run build && wrangler dev --port 8787",
+    "deploy": "npm run build && npm run check:server && wrangler deploy",
+    "test:online": "playwright test --config playwright.online.config.ts"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -37,6 +42,7 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.151.3"
   }
 }

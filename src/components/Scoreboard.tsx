@@ -1,14 +1,19 @@
-import type { Game, Team } from "../game/engine";
+import type { PlayerGame } from "../game/view";
+import type { Team } from "../game/engine";
 import { tens } from "../game/engine";
 import { SuitGlyph } from "./cards";
 
-function TeamScore({ game, team }: { game: Game; team: Team }) {
+function TeamScore({ game, team }: { game: PlayerGame; team: Team }) {
   const won = tens(game, team);
   const tricks = game.tricks[team];
   return (
     <div className={`team ${team === 0 ? "us" : "them"}`}>
       <span className="team-name">{team === 0 ? "Us" : "Them"}</span>
-      <span className="ten-slots" role="img" aria-label={`${won.length} tens captured`}>
+      <span
+        className="ten-slots"
+        role="img"
+        aria-label={`${won.length} tens captured`}
+      >
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className={`ten-slot ${won[i] ? "filled" : ""}`}>
             {won[i] && <SuitGlyph suit={won[i].suit} />}
@@ -23,7 +28,7 @@ function TeamScore({ game, team }: { game: Game; team: Team }) {
   );
 }
 
-export function HukumChip({ game }: { game: Game }) {
+export function HukumChip({ game }: { game: PlayerGame }) {
   return (
     <div
       className={`hukum-chip ${game.trump ? "is-set" : "is-open"}`}
@@ -45,7 +50,7 @@ export function HukumChip({ game }: { game: Game }) {
   );
 }
 
-export function Scoreboard({ game }: { game: Game }) {
+export function Scoreboard({ game }: { game: PlayerGame }) {
   return (
     <div className="score">
       <TeamScore game={game} team={0} />

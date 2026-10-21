@@ -78,7 +78,9 @@ export function MenuSheet({
   onNewDeal,
   onRules,
   onVolumePreview,
+  online = false,
 }: {
+  online?: boolean;
   prefs: Preferences;
   setPrefs: (update: Partial<Preferences>) => void;
   haptics: boolean;
@@ -143,34 +145,40 @@ export function MenuSheet({
           checked={prefs.reducedMotion}
           onChange={(reducedMotion) => setPrefs({ reducedMotion })}
         />
-        <div className="menu-row pace-row">
-          <span className="menu-copy">
-            Table pace
-            <small>Time between bot turns</small>
-          </span>
-          <div className="segmented" role="radiogroup" aria-label="Table pace">
-            {(["relaxed", "quick"] as const).map((speed) => (
-              <label
-                key={speed}
-                className={prefs.speed === speed ? "active" : ""}
-              >
-                <input
-                  type="radio"
-                  name="pace"
-                  value={speed}
-                  checked={prefs.speed === speed}
-                  onChange={() => setPrefs({ speed })}
-                />
-                {speed === "relaxed" ? "Relaxed" : "Quick"}
-              </label>
-            ))}
+        {!online && (
+          <div className="menu-row pace-row">
+            <span className="menu-copy">
+              Table pace
+              <small>Time between bot turns</small>
+            </span>
+            <div
+              className="segmented"
+              role="radiogroup"
+              aria-label="Table pace"
+            >
+              {(["relaxed", "quick"] as const).map((speed) => (
+                <label
+                  key={speed}
+                  className={prefs.speed === speed ? "active" : ""}
+                >
+                  <input
+                    type="radio"
+                    name="pace"
+                    value={speed}
+                    checked={prefs.speed === speed}
+                    onChange={() => setPrefs({ speed })}
+                  />
+                  {speed === "relaxed" ? "Relaxed" : "Quick"}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="menu-group">
         <Action
           icon={<RotateCcw size={s} strokeWidth={1.75} />}
-          label="New deal"
+          label={online ? "Room & players" : "New deal"}
           onClick={onNewDeal}
           disabled={!hasGame}
         />

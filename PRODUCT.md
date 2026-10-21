@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Implementation delegated by the user after discussion of React options. React + TypeScript + Vite PWA; Capacitor configuration preserves a route to iOS and Android. Shared pure game engine remains separate from UI. Native packaging and online multiplayer are subsequent milestones.
+Implementation delegated by the user after discussion of React options. React + TypeScript + Vite PWA; Capacitor configuration preserves a route to iOS and Android. Shared pure game engine remains separate from UI. Cloudflare Workers and SQLite-backed Durable Objects provide private online multiplayer; native packaging remains a subsequent milestone.
 
 ## Users
 
@@ -20,11 +20,11 @@ Capture the four tens with a partner. Make the traditional game readable, tactil
 
 ## Operating Context
 
-Portrait and landscape must both work. Device rotation changes layout without resetting play. Users can bookmark and install the PWA. The initial playable prototype uses one human and three explicitly labeled bots.
+Portrait and landscape must both work. Device rotation changes layout without resetting play. Users can bookmark and install the PWA. Offline practice uses one human and three explicitly labeled bots. Online private rooms use four humans, invite links/codes, guest sessions, and a readiness lobby.
 
 ## Capabilities and Constraints
 
-52 cards, 13 per player; partners opposite; follow suit when possible; highest trump otherwise highest led suit wins. Tens determine winner, tricks break a 2–2 tie. Confirmed modes: cut hukum (first off-suit card establishes trump), and choose hukum (deal five cards per player, designated player announces trump, then distribute eight remaining cards per player). Chosen hukum is public; hidden/reveal variants are not requested. No wagers or invented online players. Native binaries, online rooms, authentication, and matchmaking are not part of this first playable milestone.
+52 cards, 13 per player; partners opposite; follow suit when possible; highest trump otherwise highest led suit wins. Tens determine winner, tricks break a 2–2 tie. Confirmed modes: cut hukum (first off-suit card establishes trump), and choose hukum (deal five cards per player, designated player announces trump, then distribute eight remaining cards per player). Chosen hukum is public; hidden/reveal variants are not requested. No wagers or invented online players. Online rooms have guest session authentication, private hands, persisted room snapshots, and a two-minute reconnection grace period. Native binaries, account login, matchmaking, bot-filled online seats, and permanent match history are not included.
 
 ## Brand Commitments
 

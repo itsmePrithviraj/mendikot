@@ -9,10 +9,12 @@ export function Home({
   mode,
   onMode,
   onStart,
+  onOnline,
 }: {
   mode: Mode;
   onMode: (mode: Mode) => void;
   onStart: () => void;
+  onOnline: () => void;
 }) {
   return (
     <section className="home" aria-labelledby="home-title">
@@ -36,7 +38,12 @@ export function Home({
         <button className="btn btn-primary start-btn" onClick={onStart}>
           Take your seat <ArrowRight strokeWidth={2} />
         </button>
-        <p className="home-note">Practice table · you + 3 bots · nothing to sign up for</p>
+        <button className="btn btn-ghost online-entry-btn" onClick={onOnline}>
+          Play with friends
+        </button>
+        <p className="home-note">
+          Practice table · you + 3 bots · nothing to sign up for
+        </p>
       </div>
     </section>
   );

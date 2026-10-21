@@ -1,0 +1,283 @@
+/* Room screens extend the felt, ivory and brass of the existing table. */
+.app[data-screen="room"] .table {
+  grid-template-rows: minmax(0, 1fr);
+}
+.room-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--felt-500) transparent;
+  padding: var(--s5);
+}
+.room-panel {
+  width: min(100%, 560px);
+  margin: auto;
+  padding-block: var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+.room-panel.lobby {
+  gap: var(--s4);
+  padding-block: var(--s4);
+}
+.room-panel h1 {
+  font: 600 var(--fs-display)/1.05 var(--font-display);
+  text-wrap: balance;
+}
+.room-intro {
+  display: grid;
+  gap: var(--s3);
+}
+.room-intro > svg {
+  color: var(--brass);
+}
+.room-intro p,
+.room-note {
+  color: var(--on-felt-2);
+}
+.room-note {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.room-note:empty {
+  display: none;
+}
+.room-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.room-tabs button {
+  flex: 1;
+  min-height: 48px;
+  color: var(--on-felt-2);
+  padding: var(--s2);
+  border-bottom: 2px solid transparent;
+}
+.room-tabs button.active {
+  color: var(--brass-bright);
+  border-bottom-color: var(--brass);
+}
+.room-form {
+  display: grid;
+  gap: var(--s5);
+}
+.room-field {
+  display: grid;
+  gap: var(--s2);
+  font-weight: 500;
+}
+.room-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  background: var(--room);
+  color: var(--on-felt);
+  caret-color: var(--brass-bright);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.room-field input::placeholder {
+  color: var(--on-felt-2);
+  opacity: 1;
+}
+.room-field input::selection {
+  color: var(--ivory-ink);
+  background: var(--brass);
+}
+.room-field input[name="code"] {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.room-alert {
+  width: min(100%, 560px);
+  margin: var(--s2) auto;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--ivory);
+  color: var(--ivory-ink);
+  line-height: 1.5;
+}
+.room-invite {
+  display: flex;
+  gap: var(--s4);
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--s4);
+  border-block: 1px solid var(--hairline-strong);
+}
+.room-invite > div {
+  display: grid;
+  gap: var(--s1);
+}
+.room-invite span {
+  font-size: var(--fs-sm);
+  color: var(--on-felt-2);
+}
+.room-invite strong {
+  font-size: var(--fs-xl);
+  letter-spacing: 0.06em;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.room-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s5);
+}
+.room-teams h2 {
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  margin-bottom: var(--s3);
+}
+.lobby-seat {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  border-top: 1px solid var(--hairline);
+}
+.lobby-seat .avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.lobby-seat.is-you .avatar {
+  color: var(--brass-bright);
+}
+.lobby-person {
+  min-width: 0;
+  display: grid;
+  gap: var(--s1);
+}
+.lobby-person strong {
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+.lobby-person span,
+.lobby-seat > button span {
+  font-size: var(--fs-xs);
+  color: var(--on-felt-2);
+}
+.lobby-seat > button {
+  min-height: 48px;
+  width: 100%;
+  text-align: left;
+  display: grid;
+  align-content: center;
+  gap: var(--s1);
+  color: var(--brass-bright);
+}
+.lobby-seat > svg {
+  flex: none;
+  color: var(--brass-bright);
+}
+.room-panel > fieldset,
+.choose-controls {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.room-ready {
+  display: flex;
+  gap: var(--s3);
+}
+.room-ready > button {
+  flex: 1;
+}
+.room-footer {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.room-footer > .icon-btn {
+  margin-left: auto;
+}
+.room-player-list {
+  list-style: none;
+  padding: 0;
+}
+.room-player-list li {
+  display: grid;
+  gap: var(--s1);
+  padding-block: var(--s3);
+  border-bottom: 1px solid rgb(29 36 34 / 0.12);
+}
+.room-player-list span {
+  font-size: var(--fs-sm);
+  color: var(--ivory-ink-2);
+}
+.loading-game {
+  margin: auto;
+}
+.online-entry-btn {
+  width: 100%;
+}
+.online-app .turn-status {
+  text-wrap: balance;
+}
+.online-app .seat {
+  max-width: 100%;
+}
+.online-app .seat-copy {
+  max-width: 100%;
+}
+.online-app .seat-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.online-app .result-actions .btn {
+  white-space: normal;
+  padding-block: var(--s2);
+}
+.online-app button:disabled:not(.hand-card) {
+  opacity: 0.65;
+}
+@media (hover: hover) and (pointer: fine) {
+  .room-tabs button:hover,
+  .lobby-seat > button:hover {
+    background: var(--wash);
+  }
+}
+@media (max-width: 359px) {
+  .room-scroll {
+    padding: var(--s4);
+  }
+  .room-teams {
+    gap: var(--s3);
+  }
+  .room-invite {
+    flex-wrap: wrap;
+  }
+  .room-ready .btn {
+    padding-inline: var(--s4);
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .app[data-screen="room"] .room-scroll {
+    grid-area: 2 / 1 / -1 / -1;
+  }
+  .room-panel {
+    width: min(100%, 640px);
+    padding-block: var(--s2);
+    gap: var(--s4);
+  }
+  .room-intro > svg {
+    display: none;
+  }
+  .room-intro h1 {
+    font-size: 32px;
+  }
+  .room-form {
+    gap: var(--s4);
+  }
+  .online-entry-btn {
+    min-height: 44px;
+  }
+}

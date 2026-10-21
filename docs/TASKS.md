@@ -16,11 +16,15 @@ UI revamp (branch `ui-revamp`): new token system and three layout modes, redrawn
 
 ## Milestone 2 — play with friends
 
-- [ ] Confirm house rules and implement chosen hukum variations
-- [ ] Authoritative server, private room codes, player seats and teams
-- [ ] Private per-player state, legal-command validation and idempotency
-- [ ] Reconnection, turn timeout policy and abandoned-game handling
-- [ ] Four-device end-to-end playtests and abuse controls
+- [x] Implement the existing cut and choose hukum rules online
+- [x] Authoritative server, private room codes, player seats and teams
+- [x] Private per-player state, legal-command validation and idempotency
+- [x] Reconnection, turn timeout policy and abandoned-game handling
+- [x] Automated four-browser deals, runtime restart recovery, and basic abuse controls
+- [ ] Cloudflare account authorization and public deployment
+- [ ] Four-device end-to-end playtests on the deployed service
+
+See [the multiplayer walkthrough](MULTIPLAYER.md) for architecture, local testing, and deployment steps.
 
 ## Milestone 3 — mobile distribution and polish
 
