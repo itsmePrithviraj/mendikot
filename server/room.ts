@@ -49,7 +49,11 @@ export class GameRoom extends DurableObject<Env> {
         const live = this.connected();
         let changed = false;
         for (const player of this.room.players) {
-          if (player && !live.has(player.id) && player.disconnectedAt === null) {
+          if (
+            player &&
+            !live.has(player.id) &&
+            player.disconnectedAt === null
+          ) {
             player.disconnectedAt = Date.now();
             changed = true;
           }
@@ -224,6 +228,7 @@ export class GameRoom extends DurableObject<Env> {
       };
       if (!next.hostId) next.hostId = next.players[seat]!.id;
       next.revision++;
+      next.setupRevision = next.revision;
       await this.persist(next);
       this.broadcast();
       return response({ code: next.code }, 200, {

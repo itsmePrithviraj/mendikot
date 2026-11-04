@@ -36,6 +36,81 @@ const command = (
 ) => ({ id, revision, action });
 
 describe("authoritative multiplayer rooms", () => {
+  it("accepts readiness from four players viewing the same lobby revision", () => {
+    const initial = fixture();
+    let room = initial.room;
+    room.players.forEach((p) => {
+      p!.ready = false;
+    });
+    const revision = room.revision;
+    for (const player of room.players) {
+      room = applyCommand(
+        room,
+        player!.id,
+        command(revision, { type: "ready", ready: true }),
+        initial.connected,
+        Date.now(),
+      );
+    }
+    expect(room.players.every((p) => p!.ready)).toBe(true);
+    expect(room.revision).toBe(revision + 4);
+  });
+  it("rejects readiness from before a setup change or a future revision", () => {
+    const { room, connected } = fixture();
+    const changed = applyCommand(
+      room,
+      "player-0",
+      command(room.revision, { type: "mode", mode: "choose" }),
+      connected,
+      Date.now(),
+    );
+    for (const revision of [room.revision, changed.revision + 1]) {
+      expect(() =>
+        applyCommand(
+          changed,
+          "player-1",
+          command(revision, { type: "ready", ready: true }),
+          connected,
+          Date.now(),
+        ),
+      ).toThrow(/changed/);
+    }
+    const departed = structuredClone(room);
+    removePlayer(departed, "player-3", "Left.");
+    departed.revision++;
+    expect(() =>
+      applyCommand(
+        departed,
+        "player-1",
+        command(room.revision, { type: "ready", ready: true }),
+        connected,
+        Date.now(),
+      ),
+    ).toThrow(/changed/);
+  });
+  it("requires the current revision for legacy saved lobbies", () => {
+    const { room, connected } = fixture();
+    delete room.setupRevision;
+    room.revision = 5;
+    expect(() =>
+      applyCommand(
+        room,
+        "player-1",
+        command(4, { type: "ready", ready: true }),
+        connected,
+        Date.now(),
+      ),
+    ).toThrow(/changed/);
+    expect(
+      applyCommand(
+        room,
+        "player-1",
+        command(5, { type: "ready", ready: true }),
+        connected,
+        Date.now(),
+      ).players[1]!.ready,
+    ).toBe(true);
+  });
   it("requires the host, four connected seats, and readiness to start", () => {
     const { room, connected } = fixture();
     expect(() =>

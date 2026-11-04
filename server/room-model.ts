@@ -25,6 +25,8 @@ export interface RoomState {
   players: (Player | null)[];
   game: Game | null;
   revision: number;
+  // Old saved rooms omit this and conservatively require the current revision.
+  setupRevision?: number;
   expiresAt: number;
   collectAt: number | null;
   endedReason: string | null;
@@ -55,6 +57,7 @@ export function createRoom(
     players: [player, null, null, null],
     game: null,
     revision: 1,
+    setupRevision: 1,
     expiresAt: now + ROOM_TTL_MS,
     collectAt: null,
     endedReason: null,
@@ -140,6 +143,7 @@ export function parseCommand(value: unknown): Command {
 }
 
 export function removePlayer(room: RoomState, id: string, reason: string) {
+  room.setupRevision = room.revision + 1;
   if (room.game && room.game.phase !== "complete") {
     room.game = null;
     room.collectAt = null;
@@ -164,7 +168,13 @@ export function applyCommand(
   const seat = room.players.findIndex((p) => p?.id === id) as Seat;
   if (seat < 0) throw new Error("Your seat is no longer in this room.");
   if (room.receipts[id]?.includes(command.id)) return room;
-  if (command.revision !== room.revision)
+  // Different players can ready up from the same snapshot. Their intent remains
+  // valid until the roster, teams, mode, or deal changes; moves still need exact revisions.
+  const compatibleReady =
+    command.action.type === "ready" &&
+    command.revision >= (room.setupRevision ?? room.revision) &&
+    command.revision <= room.revision;
+  if (command.revision !== room.revision && !compatibleReady)
     throw new Error("The table changed. Please try your action again.");
   const next = structuredClone(room);
   const player = next.players[seat]!;
@@ -229,6 +239,8 @@ export function applyCommand(
   if (action.type !== "leave")
     next.receipts[id] = [...(next.receipts[id] ?? []), command.id].slice(-64);
   next.revision++;
+  if (["mode", "seat", "start"].includes(action.type))
+    next.setupRevision = next.revision;
   next.expiresAt = now + ROOM_TTL_MS;
   return next;
 }

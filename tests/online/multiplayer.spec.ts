@@ -63,14 +63,16 @@ async function table(
   return { users, pages, code };
 }
 async function readyAndStart(pages: Page[]) {
-  for (const page of pages) {
-    await page
-      .getByRole("button", { name: "Ready to play", exact: true })
-      .click();
-    await expect(
-      page.getByRole("button", { name: "Not ready", exact: true }),
-    ).toBeEnabled();
-  }
+  await Promise.all(
+    pages.map(async (page) => {
+      await page
+        .getByRole("button", { name: "Ready to play", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Not ready", exact: true }),
+      ).toBeEnabled();
+    }),
+  );
   await expect(
     pages[0].getByRole("button", { name: "Start deal" }),
   ).toBeEnabled();
