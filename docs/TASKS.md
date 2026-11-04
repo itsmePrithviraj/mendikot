@@ -21,7 +21,7 @@ UI revamp (branch `ui-revamp`): new token system and three layout modes, redrawn
 - [x] Private per-player state, legal-command validation and idempotency
 - [x] Reconnection, turn timeout policy and abandoned-game handling
 - [x] Automated four-browser deals, runtime restart recovery, and basic abuse controls
-- [ ] Cloudflare account authorization and public deployment
+- [x] Cloudflare account authorization and public deployment (4 November 2026)
 - [ ] Four-device end-to-end playtests on the deployed service
 
 See [the multiplayer walkthrough](MULTIPLAYER.md) for architecture, local testing, and deployment steps.

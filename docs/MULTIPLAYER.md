@@ -68,7 +68,7 @@ Mutating requests and WebSocket upgrades must carry the same origin as the game.
 
 `server/room-model.ts` validates the command against the current room. Actual card legality, trump selection, and scoring come from `src/game/engine.ts`.
 
-The object serializes asynchronous changes, saves the new state and receipt before acknowledging the action, then sends each player a separate snapshot. The last 64 accepted IDs per player are retained. A retry of an accepted action is acknowledged without applying it again; an older action outside that window is rejected by its stale revision. An unaccepted action with a stale revision asks the player to retry against the new table.
+The object serializes asynchronous changes, saves the new state and receipt before acknowledging the action, then sends each player a separate snapshot. The last 64 accepted IDs per player are retained. A retry of an accepted action is acknowledged without applying it again. Game moves require the current revision, so older moves outside the receipt window are rejected. Readiness is an explicit per-player value: players may ready up concurrently from older snapshots of the same lobby setup. A roster, team, mode, or deal change invalidates that older readiness request. Leaving releases the authenticated player's own seat even when another update arrived in the meantime. Other stale actions ask the player to retry against the new table.
 
 `src/game/view.ts` builds that snapshot's game view. It includes only the viewer's hand, legal card IDs, the other hand counts, public trick/score information, and public turn/dealer information. Neither the other hands nor the undealt reserve leaves the backend. Seat positions and team scores are rotated so the viewer is always at the bottom, with their partner opposite and their team labeled **Us**.
 
@@ -117,6 +117,10 @@ npm run test:online
 The online browser suite uses four isolated cookie jars against the real local Workers/Durable Objects runtime. It exercises both full game modes, private views, refresh recovery, rematches, authentication, duplicate messages, replacement tabs, leaving, and responsive room screens. A separate test stops and restarts the runtime with persisted storage, then verifies player identities, hands, and action deduplication survive. It is separate from the offline/PWA browser suite. CI runs both.
 
 ## Deploy to your Cloudflare account
+
+The game is live at [Mendikot multiplayer](https://mendikot-multiplayer.prithvirajgokule0607.workers.dev), deployed on 4 November 2026 from runtime commit `5bf9b26` on `codex/multiplayer`. Cloudflare version: `329a574e-7443-4779-8156-ff9582c03582`. The Worker, static website, and SQLite-backed `GameRoom` Durable Object class are deployed together. Future deployments use the same command below and preserve room storage.
+
+Deployment verification used four isolated browser sessions against the public HTTPS service. Complete cut and choose deals passed with private-hand checks, refresh recovery, and rematches. Live testing exposed readiness and leave-request races under network latency; both were corrected, covered by unit regressions, and the live authentication/duplicate-action/replacement-tab/leave test passed on the final version. Testing with four actual devices and people remains a separate playtest.
 
 The first deployment needs the account owner's browser authorization:
 

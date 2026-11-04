@@ -4,6 +4,8 @@ Four players. Two teams. Four very special tens.
 
 A responsive, installable card game built with React and TypeScript. Play offline practice with three bots, or invite three friends to a private multiplayer table backed by Cloudflare Durable Objects, in portrait or landscape. The sheep decorates each **10**; the numeral and suit remain readable.
 
+[Play Mendikot online](https://mendikot-multiplayer.prithvirajgokule0607.workers.dev). Choose **Play with friends**, create a room, and share its invitation with three other players.
+
 ## Run locally
 
 Requires Node 22.12+.
