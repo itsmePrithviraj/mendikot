@@ -174,7 +174,17 @@ export function applyCommand(
     command.action.type === "ready" &&
     command.revision >= (room.setupRevision ?? room.revision) &&
     command.revision <= room.revision;
-  if (command.revision !== room.revision && !compatibleReady)
+  // Leaving expresses the authenticated player's intent to release their own
+  // seat, even if another player disconnected while the request was in flight.
+  const compatibleLeave =
+    command.action.type === "leave" &&
+    command.revision >= 0 &&
+    command.revision <= room.revision;
+  if (
+    command.revision !== room.revision &&
+    !compatibleReady &&
+    !compatibleLeave
+  )
     throw new Error("The table changed. Please try your action again.");
   const next = structuredClone(room);
   const player = next.players[seat]!;

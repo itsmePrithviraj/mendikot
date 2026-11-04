@@ -36,6 +36,30 @@ const command = (
 ) => ({ id, revision, action });
 
 describe("authoritative multiplayer rooms", () => {
+  it("lets a player leave despite intervening updates, but rejects future revisions", () => {
+    const { room, connected } = fixture();
+    room.game = newGame();
+    room.revision = 9;
+    expect(() =>
+      applyCommand(
+        room,
+        "player-1",
+        command(10, { type: "leave" }),
+        connected,
+        Date.now(),
+      ),
+    ).toThrow(/changed/);
+    const next = applyCommand(
+      room,
+      "player-1",
+      command(8, { type: "leave" }),
+      connected,
+      Date.now(),
+    );
+    expect(next.players[1]).toBeNull();
+    expect(next.game).toBeNull();
+    expect(next.endedReason).toMatch(/left/);
+  });
   it("accepts readiness from four players viewing the same lobby revision", () => {
     const initial = fixture();
     let room = initial.room;
