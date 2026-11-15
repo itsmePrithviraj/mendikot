@@ -11,9 +11,13 @@ export function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   });
 }
 
-export class TooLargeError extends Error {
-  constructor() {
-    super("Request is too large.");
+/** A rejected request with a player-facing message and an HTTP status. */
+export class HttpError extends Error {
+  constructor(
+    message: string,
+    readonly status = 400,
+  ) {
+    super(message);
   }
 }
 
@@ -29,7 +33,7 @@ export async function readCapped(request: Request): Promise<Uint8Array> {
     length += value.byteLength;
     if (length > MAX_MESSAGE_BYTES) {
       await reader.cancel();
-      throw new TooLargeError();
+      throw new HttpError("Request is too large.", 413);
     }
     chunks.push(value);
   }
@@ -47,16 +51,16 @@ export async function readJsonObject(
   request: Request,
 ): Promise<Record<string, unknown>> {
   if (!request.headers.get("Content-Type")?.startsWith("application/json"))
-    throw new Error("Expected JSON.");
+    throw new HttpError("Expected JSON.", 415);
   const bytes = await readCapped(request);
   let body: unknown;
   try {
     body = JSON.parse(new TextDecoder().decode(bytes));
   } catch {
-    throw new Error("Invalid request.");
+    throw new HttpError("Invalid request.");
   }
   if (!body || typeof body !== "object" || Array.isArray(body))
-    throw new Error("Invalid request.");
+    throw new HttpError("Invalid request.");
   return body as Record<string, unknown>;
 }
 

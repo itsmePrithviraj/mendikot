@@ -15,6 +15,7 @@ import type { Game, Mode, Seat } from "../src/game/engine";
 import { playerGame } from "../src/game/view";
 import { RECONNECT_MS, ROOM_TTL_MS } from "../src/multiplayer/protocol";
 import type { Command, RoomSnapshot } from "../src/multiplayer/protocol";
+import { HttpError } from "./http";
 
 /** How long a completed trick stays on the table before it is collected. */
 export const TRICK_COLLECT_MS = 1700;
@@ -57,15 +58,8 @@ export interface RoomState {
   receipts: Record<string, string[]>;
 }
 
-/** A rejected request. `status` is the HTTP status used outside WebSockets. */
-export class RoomError extends Error {
-  constructor(
-    message: string,
-    readonly status = 400,
-  ) {
-    super(message);
-  }
-}
+/** A rejected room request. `status` is the HTTP status used outside WebSockets. */
+export class RoomError extends HttpError {}
 
 export function playerName(value: unknown): string {
   if (typeof value !== "string") throw new RoomError("Enter your name.");
@@ -132,8 +126,8 @@ function clearReadiness(draft: RoomState) {
 }
 
 /**
- * A finished deal's result belongs to the players who played it. Once the
- * roster changes, drop it so newcomers start in the lobby.
+ * A finished deal's result belongs to the players who played it. Those who
+ * stay may keep looking at it; a newcomer starts in the lobby instead.
  */
 function discardFinishedDeal(draft: RoomState) {
   if (draft.game?.phase === "complete") draft.game = null;
@@ -146,7 +140,6 @@ function release(draft: RoomState, id: string, reason: string) {
     draft.collectAt = null;
     draft.endedReason = reason;
   }
-  discardFinishedDeal(draft);
   draft.players = draft.players.map((p) => (p?.id === id ? null : p));
   delete draft.receipts[id];
   clearReadiness(draft);

@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { resultOf, SUITS, tens } from "../../game/engine";
 import type { PlayerGame } from "../../game/view";
@@ -22,6 +23,13 @@ export function ResultPanel({
   onChangeMode: () => void;
   actions?: ReactNode;
 }) {
+  const panel = useRef<HTMLElement>(null);
+  // The hand disappears with the last card; keep keyboard focus on the table.
+  useEffect(() => {
+    const active = document.activeElement;
+    if (!active || active === document.body || active.closest(".hand"))
+      panel.current?.focus();
+  }, []);
   const result = resultOf(game);
   if (!result) return null;
   const won = tens(game, result.winner);
@@ -31,6 +39,8 @@ export function ResultPanel({
   const tied = won.length === 2;
   return (
     <section
+      ref={panel}
+      tabIndex={-1}
       className={`panel result-panel ${ours ? "is-win" : "is-loss"}`}
       aria-live="polite"
     >

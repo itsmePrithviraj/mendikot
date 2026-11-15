@@ -356,10 +356,10 @@ describe("authoritative multiplayer rooms", () => {
       connected,
       0,
     );
-    expect(left.game).toBeNull();
-    const ended = { ...room, players: [...room.players.slice(0, 3), null] };
-    ended.endedReason = "Friend 3 left. This deal has ended without a winner.";
-    const joined = joinRoom(ended, {
+    // Those who stay can keep looking at the result.
+    expect(left.game!.phase).toBe("complete");
+    left.endedReason = "Friend 3 left. This deal has ended without a winner.";
+    const joined = joinRoom(left, {
       id: "player-new",
       name: "New",
       tokenHash: "secret-new",

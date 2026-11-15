@@ -6,7 +6,13 @@
 import { DurableObject } from "cloudflare:workers";
 import { CloseCode } from "../src/multiplayer/protocol";
 import type { ServerMessage } from "../src/multiplayer/protocol";
-import { byteLength, json, MAX_MESSAGE_BYTES, readJsonObject } from "./http";
+import {
+  byteLength,
+  HttpError,
+  json,
+  MAX_MESSAGE_BYTES,
+  readJsonObject,
+} from "./http";
 import {
   advanceTimers,
   applyCommand,
@@ -140,7 +146,7 @@ export class GameRoom extends DurableObject<Env> {
       } catch (error) {
         return json(
           { error: errorMessage(error, "Unable to open this room.") },
-          error instanceof RoomError ? error.status : 400,
+          error instanceof HttpError ? error.status : 400,
         );
       } finally {
         // Never leave a request body unread behind an early response.

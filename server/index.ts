@@ -3,7 +3,7 @@
  * Durable Object that owns each room code.
  */
 import { ROOM_CODE, ROOM_CODE_ALPHABET } from "../src/multiplayer/protocol";
-import { json, readCapped, TooLargeError } from "./http";
+import { HttpError, json, readCapped } from "./http";
 
 export { GameRoom } from "./room";
 
@@ -43,8 +43,8 @@ export default {
     try {
       return await route(request, env);
     } catch (error) {
-      if (error instanceof TooLargeError)
-        return json({ error: error.message }, 413);
+      if (error instanceof HttpError)
+        return json({ error: error.message }, error.status);
       throw error;
     }
   },
@@ -65,7 +65,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   )
     return json({ error: "Open this room from the game's own website." }, 403);
 
-  if (request.method === "POST" && url.pathname === "/api/rooms") {
+  if (url.pathname === "/api/rooms") {
+    if (request.method !== "POST")
+      return json({ error: "Method not allowed." }, 405);
     if (await throttled(env.CREATE_LIMIT, request))
       return tooMany("Too many rooms created. Wait a minute and try again.");
     if (!request.headers.get("Content-Type")?.startsWith("application/json"))
@@ -92,7 +94,12 @@ async function route(request: Request, env: Env): Promise<Response> {
     return tooMany(
       "Too many connection attempts. Wait a minute and try again.",
     );
+  // A room only ever sees a buffered POST body or no body at all.
   return env.ROOMS.getByName(code).fetch(
-    request.method === "POST" ? await buffered(request) : request,
+    request.method === "POST"
+      ? await buffered(request)
+      : endpoint === "socket"
+        ? request
+        : new Request(request.url, { headers: request.headers }),
   );
 }

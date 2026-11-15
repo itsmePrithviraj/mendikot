@@ -28,7 +28,7 @@ export function RoomEntry({
   return (
     <section className="room-panel" aria-labelledby="room-entry-title">
       {notice && (
-        <p className="room-note" role="status">
+        <p className="room-alert" role="status">
           {notice}
         </p>
       )}
@@ -41,7 +41,10 @@ export function RoomEntry({
         <button
           className={!joining ? "active" : ""}
           aria-pressed={!joining}
-          onClick={() => setJoining(false)}
+          onClick={() => {
+            setJoining(false);
+            onEdit();
+          }}
           disabled={busy}
         >
           Create a room
@@ -49,7 +52,10 @@ export function RoomEntry({
         <button
           className={joining ? "active" : ""}
           aria-pressed={joining}
-          onClick={() => setJoining(true)}
+          onClick={() => {
+            setJoining(true);
+            onEdit();
+          }}
           disabled={busy}
         >
           Join a room
