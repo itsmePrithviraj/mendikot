@@ -1,5 +1,11 @@
 export const PREFS_KEY = "mendikot.preferences.v1";
 
+/**
+ * Bumped when a default changes for everyone. Saves from an older version
+ * take the new default for `sound`; other choices are kept.
+ */
+const DEFAULTS_VERSION = 2;
+
 export interface Preferences {
   sound: boolean;
   speed: "relaxed" | "quick";
@@ -11,7 +17,7 @@ export interface Preferences {
 }
 
 export const DEFAULT_PREFS: Preferences = {
-  sound: false,
+  sound: true,
   speed: "relaxed",
   reducedMotion: false,
   haptics: true,
@@ -21,10 +27,13 @@ export const DEFAULT_PREFS: Preferences = {
 export function readPrefs(): Preferences {
   try {
     const data = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
+    // Version 1 wrote sound: false for everyone who never touched it.
+    const current = data.defaults === DEFAULTS_VERSION;
     return {
-      sound: data.sound === true,
+      sound: current ? data.sound !== false : true,
       speed: data.speed === "quick" ? "quick" : "relaxed",
       reducedMotion: data.reducedMotion === true,
+      // Haptics were already on by default, so a saved "off" was a choice.
       haptics: data.haptics !== false,
       volume:
         typeof data.volume === "number" && data.volume >= 0 && data.volume <= 1
@@ -38,7 +47,10 @@ export function readPrefs(): Preferences {
 
 export function writePrefs(prefs: Preferences) {
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    localStorage.setItem(
+      PREFS_KEY,
+      JSON.stringify({ ...prefs, defaults: DEFAULTS_VERSION }),
+    );
   } catch {
     /* Continue without persistence. */
   }

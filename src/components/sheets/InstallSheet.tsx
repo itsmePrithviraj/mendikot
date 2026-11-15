@@ -9,9 +9,7 @@ export function InstallSheet() {
         <strong>Android or desktop:</strong> use your browser’s Install app
         option.
       </p>
-      <p className="small-print">
-        Once installed, practice games work offline.
-      </p>
+      <p className="small-print">Once installed, solo games work offline.</p>
     </>
   );
 }

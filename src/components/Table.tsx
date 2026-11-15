@@ -69,7 +69,7 @@ export function Table({
         <button
           className="chip last-trick-btn"
           onClick={onLastTrick}
-          aria-label="Last trick"
+          aria-label="Last sheep"
         >
           <History strokeWidth={1.75} />
         </button>

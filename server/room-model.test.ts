@@ -10,8 +10,10 @@ import {
   reconcilePresence,
   roomView,
   setConnected,
+  BOT_AFTER_DEAL_MS,
   TRICK_COLLECT_MS,
 } from "./room-model";
+import type { RoomState } from "./room-model";
 import {
   chooseBotCard,
   collectTrick,
@@ -142,7 +144,7 @@ describe("authoritative multiplayer rooms", () => {
         connected,
         Date.now(),
       ),
-    ).toThrow(/four/);
+    ).toThrow(/Every seat/);
     connected.add("player-3");
     room.players[3]!.ready = false;
     expect(() =>
@@ -153,7 +155,7 @@ describe("authoritative multiplayer rooms", () => {
         connected,
         Date.now(),
       ),
-    ).toThrow(/four/);
+    ).toThrow(/Every seat/);
   });
   it("does not leak any other hand, reserve, credential, or action receipt", () => {
     const { room, connected } = fixture();
@@ -525,4 +527,265 @@ describe("authoritative multiplayer rooms", () => {
       expect(room.game!.dealer).toBe(0);
     },
   );
+});
+
+describe("bots in private rooms", () => {
+  function hostAlone(mode: "cut" | "choose" = "cut") {
+    const host = {
+      id: "host",
+      name: "Asha",
+      tokenHash: "secret",
+      ready: false,
+      disconnectedAt: null,
+    };
+    return {
+      room: createRoom("BOTSROOM", mode, host, 0),
+      connected: new Set(["host"]),
+    };
+  }
+  const act = (
+    room: RoomState,
+    who: string,
+    action: RoomAction,
+    connected: Set<string>,
+    now = 0,
+  ) => applyCommand(room, who, command(room.revision, action), connected, now);
+
+  function withBots(mode: "cut" | "choose" = "cut") {
+    let { room, connected } = hostAlone(mode);
+    room = act(room, "host", { type: "bot", add: true }, connected);
+    expect(room.players.map((p) => p?.name)).toEqual([
+      "Asha",
+      "Kavya",
+      "Rohan",
+      "Meera",
+    ]);
+    expect(() =>
+      act(room, "host", { type: "bot", add: true }, connected),
+    ).toThrow(/already taken/);
+    room = act(room, "host", { type: "ready", ready: true }, connected);
+    return { room, connected };
+  }
+
+  it("lets only the host fill and empty seats with bots between deals", () => {
+    let { room, connected } = hostAlone();
+    room = act(room, "host", { type: "bot", seat: 2, add: true }, connected);
+    const bot = room.players[2]!;
+    expect(bot).toMatchObject({ bot: true, ready: true, name: "Kavya" });
+    expect(roomView(room, "host", connected).players[1]).toMatchObject({
+      bot: true,
+      connected: true,
+      ready: true,
+    });
+    expect(() =>
+      act(room, "host", { type: "bot", seat: 2, add: true }, connected),
+    ).toThrow(/taken/);
+    room = act(room, "host", { type: "bot", seat: 3, add: true }, connected);
+    expect(room.players[3]!.name).toBe("Rohan");
+    room = act(room, "host", { type: "bot", seat: 2, add: false }, connected);
+    expect(room.players[2]).toBeNull();
+    expect(() =>
+      act(room, "host", { type: "bot", seat: 1, add: false }, connected),
+    ).toThrow(/no bot/);
+    expect(() =>
+      parseCommand(command(1, { type: "bot", add: false } as RoomAction)),
+    ).toThrow(/Invalid/);
+
+    const guest = {
+      id: "guest",
+      name: "Dev",
+      tokenHash: "g",
+      ready: false,
+      disconnectedAt: null,
+    };
+    room = joinRoom(room, guest);
+    connected.add("guest");
+    expect(() =>
+      act(room, "guest", { type: "bot", seat: 2, add: true }, connected),
+    ).toThrow(/host/);
+  });
+
+  it("starts with bots, plays their turns on a timer and finishes the deal", () => {
+    let { room, connected } = withBots("choose");
+    room = act(room, "host", { type: "start" }, connected);
+    expect(room.game).not.toBeNull();
+    let now = 0,
+      humanMoves = 0;
+    for (let step = 0; step < 400 && room.game!.phase !== "complete"; step++) {
+      const game = room.game!;
+      if (game.turn === 0 && game.phase === "choosing-trump") {
+        room = act(
+          room,
+          "host",
+          { type: "trump", suit: "hearts" },
+          connected,
+          now,
+        );
+        humanMoves++;
+        continue;
+      }
+      if (game.turn === 0 && game.phase === "playing") {
+        const cardId = chooseBotCard(game).id;
+        room = act(room, "host", { type: "play", cardId }, connected, now);
+        humanMoves++;
+        continue;
+      }
+      // Bots and trick collection wait for the next deadline.
+      now = nextDeadline(room);
+      room = advanceTimers(room, now);
+    }
+    expect(room.game!.phase).toBe("complete");
+    expect(resultOf(room.game!)).not.toBeNull();
+    expect(humanMoves).toBeGreaterThanOrEqual(13);
+    expect(room.botAt).toBeNull();
+  });
+
+  it("pauses bots while a person is away and resumes on return", () => {
+    let { room, connected } = withBots();
+    room = act(room, "host", { type: "start" }, connected);
+    // Play until it is a bot's turn.
+    while (!room.players[room.game!.turn]!.bot)
+      room = act(
+        room,
+        "host",
+        { type: "play", cardId: chooseBotCard(room.game!).id },
+        connected,
+      );
+    expect(room.botAt).not.toBeNull();
+    room = setConnected(room, "host", false, 10);
+    expect(room.botAt).toBeNull();
+    const frozen = room.game;
+    room = advanceTimers(room, 5_000);
+    expect(room.game).toEqual(frozen);
+    room = setConnected(room, "host", true, 6_000);
+    expect(room.botAt).toBe(7_000);
+  });
+
+  it("restarts treat bots as present", () => {
+    const { room } = withBots();
+    expect(reconcilePresence(room, new Set(["host"]), 5)).toBe(room);
+    const next = reconcilePresence(room, new Set(), 5);
+    expect(next.players.filter((p) => p?.disconnectedAt === 5)).toHaveLength(1);
+  });
+
+  it("gives a newcomer a bot's seat and clears bots when the last person leaves", () => {
+    let { room, connected } = withBots();
+    room = joinRoom(room, {
+      id: "guest",
+      name: "Dev",
+      tokenHash: "g",
+      ready: false,
+      disconnectedAt: null,
+    });
+    expect(room.players[1]!.id).toBe("guest");
+    expect(room.players.filter((p) => p?.bot)).toHaveLength(2);
+    connected.add("guest");
+    room = act(room, "guest", { type: "leave" }, connected);
+    room = act(room, "host", { type: "leave" }, connected);
+    expect(room.players.every((p) => p === null)).toBe(true);
+    expect(room.hostId).toBe("");
+  });
+
+  it("lets the host start without pressing ready; bots wait out the deal animation", () => {
+    let { room, connected } = hostAlone();
+    room = act(room, "host", { type: "bot", add: true }, connected);
+    expect(room.players[0]!.ready).toBe(false);
+    room = act(room, "host", { type: "start" }, connected, 100);
+    expect(room.game).not.toBeNull();
+    // Seat 3 dealt, so the host leads; after the host plays, a bot is next.
+    room = act(
+      room,
+      "host",
+      { type: "play", cardId: chooseBotCard(room.game!).id },
+      connected,
+      200,
+    );
+    expect(room.botAt).toBe(1_200);
+  });
+
+  it("swaps a person into a bot's seat, keeping the bot at the table", () => {
+    let { room, connected } = withBots();
+    room = joinRoom(room, {
+      id: "guest",
+      name: "Dev",
+      tokenHash: "g",
+      ready: false,
+      disconnectedAt: null,
+    });
+    connected.add("guest");
+    const guestSeat = room.players.findIndex((p) => p?.id === "guest");
+    const target = room.players.findIndex(
+      (p, i) => p?.bot && i % 2 === 0,
+    ) as Seat;
+    const bot = room.players[target]!.id;
+    room = act(room, "guest", { type: "seat", seat: target }, connected);
+    expect(room.players[target]!.id).toBe("guest");
+    expect(room.players[guestSeat]!.id).toBe(bot);
+    expect(() =>
+      act(room, "guest", { type: "seat", seat: 0 }, connected),
+    ).toThrow(/empty seat/);
+  });
+
+  it("lets a bot choose hukum when the deal rotates to it", () => {
+    let { room, connected } = withBots("choose");
+    let now = 0;
+    for (let deal = 0; deal < 2; deal++) {
+      room = act(room, "host", { type: "start" }, connected, now);
+      const chooser = room.game!.turn;
+      if (deal === 1) {
+        expect(room.players[chooser]!.bot).toBe(true);
+        expect(room.botAt).toBe(now + BOT_AFTER_DEAL_MS);
+      }
+      for (
+        let step = 0;
+        step < 400 && room.game!.phase !== "complete";
+        step++
+      ) {
+        const game = room.game!;
+        if (game.turn === 0 && game.phase === "choosing-trump")
+          room = act(
+            room,
+            "host",
+            { type: "trump", suit: "spades" },
+            connected,
+            now,
+          );
+        else if (game.turn === 0 && game.phase === "playing")
+          room = act(
+            room,
+            "host",
+            { type: "play", cardId: chooseBotCard(game).id },
+            connected,
+            now,
+          );
+        else {
+          now = nextDeadline(room);
+          room = advanceTimers(room, now);
+        }
+      }
+      expect(room.game!.phase).toBe("complete");
+      if (deal === 1) expect(room.game!.trump).not.toBeNull();
+    }
+  });
+
+  it("keeps a pending bot move across a restart and runs it once", () => {
+    let { room, connected } = withBots();
+    room = act(room, "host", { type: "start" }, connected, 0);
+    room = act(
+      room,
+      "host",
+      { type: "play", cardId: chooseBotCard(room.game!).id },
+      connected,
+      10,
+    );
+    const due = room.botAt!;
+    // The object restarts with the host's socket still open.
+    expect(reconcilePresence(room, new Set(["host"]), 20)).toBe(room);
+    expect(nextDeadline(room)).toBe(due);
+    const after = advanceTimers(room, due);
+    expect(after.game!.trick).toHaveLength(2);
+    // A second alarm for the same moment changes nothing more.
+    const again = advanceTimers(after, due);
+    expect(again.game!.trick).toHaveLength(2);
+  });
 });

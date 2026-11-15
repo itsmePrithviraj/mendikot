@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { resultOf, SUITS, tens } from "../../game/engine";
 import type { PlayerGame } from "../../game/view";
 import { CardFace } from "../cards";
+import { sheep } from "../../state/names";
 
 /** Seen from the viewer's team (team 0). */
 function headline(ours: boolean, coat: boolean, whitewash: boolean) {
@@ -46,8 +47,8 @@ export function ResultPanel({
       <h2>{headline(ours, result.coat, result.whitewash)}</h2>
       <p className="result-line tnum">
         {tied
-          ? `Tens split 2–2 · ${game.tricks[result.winner]}–${game.tricks[loser]} on tricks`
-          : `${won.length} of 4 tens · ${game.tricks[result.winner]} tricks`}
+          ? `Tens split 2–2 · ${game.tricks[result.winner]}–${game.tricks[loser]} on sheeps`
+          : `${won.length} of 4 tens · ${sheep(game.tricks[result.winner])}`}
       </p>
       <div
         className="result-tens"

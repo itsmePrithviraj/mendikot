@@ -40,20 +40,37 @@ import { readPrefs, writePrefs } from "./state/prefs";
 import type { Preferences } from "./state/prefs";
 import { readGame, writeGame } from "./state/save";
 import { statusOf } from "./state/status";
+import type { RoomIntent } from "./multiplayer/RoomLobby";
 import type { Stage, Status } from "./state/status";
 
 type SheetKind = "rules" | "menu" | "new" | "install" | "last" | null;
+
+/** Set while this tab shows a solo deal, so a reload returns to it while a
+ * fresh visit opens on the start screen. */
+const SCREEN_KEY = "mendikot.screen";
+function resumeInThisTab() {
+  try {
+    return sessionStorage.getItem(SCREEN_KEY) === "game";
+  } catch {
+    return false;
+  }
+}
 
 const SHEET_TITLES: Record<Exclude<SheetKind, null>, string> = {
   rules: "How to play",
   menu: "Menu",
   new: "New deal",
   install: "Install Mendikot",
-  last: "Last trick",
+  last: "Last sheep",
 };
 
 /** Offline practice: one human and three bots, saved on this device. */
-export function PracticeApp({ onOnline }: { onOnline: () => void }) {
+/** The start screen and offline solo play: one human and three bots, saved on this device. */
+export function PracticeApp({
+  onOnline,
+}: {
+  onOnline: (intent: RoomIntent) => void;
+}) {
   const [game, setGame] = useState<Game | null>(readGame),
     [mode, setMode] = useState<Mode>(() => readGame()?.mode ?? "cut"),
     [selected, setSelected] = useState<string | null>(null),
@@ -61,7 +78,13 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
     [sheet, setSheet] = useState<SheetKind>(null),
     [prefs, setPrefsState] = useState(readPrefs),
     [saveError, setSaveError] = useState(false),
-    [hint, setHint] = useState<{ id: string; status: Status } | null>(null);
+    [atHome, setAtHome] = useState(() => !readGame() || !resumeInThisTab()),
+    // `n` counts refused taps so the same card shakes again on every tap.
+    [hint, setHint] = useState<{
+      id: string;
+      n: number;
+      status: Status;
+    } | null>(null);
   const { offline, visible, fullscreen, systemReduced } = useSystemFlags();
   const install = useInstallPrompt(() => setSheet(null));
   const sound = useSound(prefs.sound, prefs.volume);
@@ -85,6 +108,13 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   }, [game]);
   useEffect(() => writePrefs(prefs), [prefs]);
   useEffect(() => {
+    try {
+      sessionStorage.setItem(SCREEN_KEY, game && !atHome ? "game" : "home");
+    } catch {
+      /* Reloads simply open on the start screen. */
+    }
+  }, [game, atHome]);
+  useEffect(() => {
     if (stage === "ready") return;
     const timer = setTimeout(
       () => setStage(stage === "shuffle" ? "deal" : "ready"),
@@ -99,7 +129,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   // Bot turns and trick collection. Timings are unchanged from the original
   // table; CSS --pace-hold mirrors the trick-complete wait.
   useEffect(() => {
-    if (!game || stage !== "ready" || sheet || !visible) return;
+    if (!game || atHome || stage !== "ready" || sheet || !visible) return;
     let callback: (() => void) | null = null;
     let wait = prefs.speed === "quick" ? 430 : 1100;
     if (game.phase === "trick-complete") {
@@ -126,7 +156,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
     return () => clearTimeout(timer);
     // Timers depend on game identity; rotating never changes game state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, stage, sheet, visible, prefs.speed, prefs.sound]);
+  }, [game, atHome, stage, sheet, visible, prefs.speed, prefs.sound]);
   // A small celebratory buzz when our side takes a trick.
   const trickWinner =
     game?.phase === "trick-complete" ? winnerOf(game.trick, game.trump) : null;
@@ -146,6 +176,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
     setSelected(null);
     setStage("shuffle");
     setSheet(null);
+    setAtHome(false);
     sound("shuffle");
   }
   function play() {
@@ -159,10 +190,11 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   function select(card: Card) {
     if (myTurn && !legal.has(card.id) && game?.trick.length) {
       const led = game.trick[0].card.suit;
-      setHint({
+      setHint((old) => ({
         id: card.id,
+        n: (old?.n ?? 0) + 1,
         status: { text: "Follow", suit: led, mine: true },
-      });
+      }));
       setSelected(null);
       tap(10);
       return;
@@ -186,14 +218,14 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   return (
     <div
       className={`app${reduced ? " reduce-motion" : ""}${prefs.speed === "quick" ? " pace-quick" : ""}`}
-      data-screen={game ? "game" : "home"}
+      data-screen={game && !atHome ? "game" : "home"}
       data-phase={game?.phase}
       data-stage={stage}
     >
       <CardDefs />
       <TopBar offline={offline} onMenu={() => setSheet("menu")} />
       <main className="table" aria-label="Mendikot game table">
-        {game && view ? (
+        {game && view && !atHome ? (
           <>
             <Scoreboard game={view} />
             <Table
@@ -211,7 +243,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
               selected={selected}
               disabled={stage !== "ready" || !playing || game.turn !== 0}
               dealing={stage === "deal"}
-              shaking={hint?.id ?? null}
+              shake={hint}
               canPlay={canPlay}
               haptic={switchTicks}
               onSelect={select}
@@ -227,10 +259,14 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
           </>
         ) : (
           <Home
-            onOnline={onOnline}
             mode={mode}
+            resume={!!game && game.phase !== "complete"}
             onMode={setMode}
-            onStart={() => start()}
+            onSolo={() =>
+              game && game.phase !== "complete" ? setAtHome(false) : start()
+            }
+            onCreate={() => onOnline("create")}
+            onJoin={() => onOnline("join")}
           />
         )}
       </main>
@@ -263,14 +299,15 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
             haptics={canHaptic()}
             fullscreen={fullscreen}
             canFullscreen={canFullscreen()}
-            hasGame={!!game}
+            hasGame={!!game && !atHome}
             onFullscreen={() => void toggleFullscreen()}
             onInstall={() => void installApp()}
             onNewDeal={() => setSheet("new")}
             onRules={() => setSheet("rules")}
-            onOnline={() => {
+            onHome={() => {
               setSheet(null);
-              onOnline();
+              setSelected(null);
+              setAtHome(true);
             }}
             onVolumePreview={() => sound("place")}
           />

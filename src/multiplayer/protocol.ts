@@ -26,6 +26,8 @@ export interface RoomPlayer {
   seat: Seat;
   ready: boolean;
   connected: boolean;
+  /** Filled by the host with a server-run bot. Older servers omit it. */
+  bot?: boolean;
 }
 
 /** One player's private view of the room, sent after every change. */
@@ -49,6 +51,11 @@ export type RoomAction =
   | { type: "ready"; ready: boolean }
   | { type: "mode"; mode: Mode }
   | { type: "seat"; seat: Seat }
+  /**
+   * Host only, between deals. Adding without a seat fills every empty seat;
+   * removing needs the bot's seat.
+   */
+  | { type: "bot"; add: boolean; seat?: Seat }
   | { type: "start" }
   | { type: "play"; cardId: string }
   | { type: "trump"; suit: Suit }
