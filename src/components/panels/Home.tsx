@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import type { Mode } from "../../game/engine";
 import { CardBack, CardFace } from "../cards";
 import { ModePicker } from "./ModePicker";
@@ -24,26 +23,16 @@ export function Home({
           <CardFace card={HERO} />
           <CardBack />
         </div>
-        <div className="home-copy">
-          <h1 id="home-title">
-            Four tens.
-            <br />
-            <em>One lovely rivalry.</em>
-          </h1>
-          <p>Follow suit, trust your partner, bring the sheep home.</p>
-        </div>
+        <h1 id="home-title">Capture the tens.</h1>
       </div>
       <div className="home-controls">
         <ModePicker mode={mode} onChange={onMode} />
         <button className="btn btn-primary start-btn" onClick={onStart}>
-          Take your seat <ArrowRight strokeWidth={2} />
+          Practice with bots
         </button>
         <button className="btn btn-ghost online-entry-btn" onClick={onOnline}>
           Play with friends
         </button>
-        <p className="home-note">
-          Practice table · you + 3 bots · nothing to sign up for
-        </p>
       </div>
     </section>
   );

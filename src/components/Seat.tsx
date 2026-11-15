@@ -4,12 +4,10 @@ import { useTableIdentity } from "../state/tableIdentity";
 
 export function Seat({
   seat,
-  cards,
   turn,
   winner,
 }: {
   seat: SeatId;
-  cards: number;
   turn: boolean;
   winner: boolean;
 }) {
@@ -28,19 +26,13 @@ export function Seat({
           {name}
         </strong>
         <span className="seat-meta">
-          {seat === PARTNER ? "Partner" : "Opponent"}
-          <span className="seat-bot">
-            {online ? (away ? " · Away" : "") : " · Bot"}
+          <span className="seat-role">
+            {seat === PARTNER ? "Partner" : "Opponent"}
           </span>
+          {(away || !online) && (
+            <span className="seat-bot">{away ? "Away" : "Bot"}</span>
+          )}
         </span>
-      </span>
-      <span
-        className="seat-cards tnum"
-        role="img"
-        aria-label={`${cards} ${cards === 1 ? "card" : "cards"}`}
-      >
-        <span className="mini-back" aria-hidden="true" />
-        {cards}
       </span>
       {turn && <span className="sr-only">{name}’s turn</span>}
     </div>

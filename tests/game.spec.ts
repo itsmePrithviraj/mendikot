@@ -7,6 +7,8 @@ import {
   collectTrick,
 } from "../src/game/engine";
 import type { Game } from "../src/game/engine";
+/** Hand cards overlap; tap the visible index corner as a player would. */
+const CORNER = { position: { x: 14, y: 24 } };
 const seeded = (seed: number) => () => {
   seed = (seed * 1664525 + 1013904223) >>> 0;
   return seed / 2 ** 32;
@@ -30,7 +32,7 @@ test("five cards precede chosen hukum; rotation and refresh preserve the hand", 
   );
   await page.goto("/");
   await page.getByLabel("Choose hukum", { exact: false }).check();
-  await page.getByRole("button", { name: "Take your seat" }).click();
+  await page.getByRole("button", { name: "Practice with bots" }).click();
   await expect(
     page.getByRole("button", { name: "Choose hearts as hukum" }),
   ).toBeVisible();
@@ -52,7 +54,7 @@ test("five cards precede chosen hukum; rotation and refresh preserve the hand", 
   await page.setViewportSize({ width: 844, height: 390 });
   await expect.poll(() => handRows(page)).toBe(1);
   await page.setViewportSize({ width: 320, height: 740 });
-  await expect.poll(() => handRows(page)).toBe(3);
+  await expect.poll(() => handRows(page)).toBe(2);
   await expect(page.locator(".hand-card")).toHaveCount(13);
   expect(
     await page.evaluate(() => localStorage.getItem("mendikot.game.v1")),
@@ -67,18 +69,17 @@ test("cut mode starts with thirteen; preview does not play; confirmation advance
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Take your seat" }).click();
+  await page.getByRole("button", { name: "Practice with bots" }).click();
   await expect(page.locator(".turn-status")).toContainText("Your turn", {
     timeout: 10000,
   });
   await expect(page.locator(".hand-card")).toHaveCount(13);
-  await page.locator(".hand-card").first().click();
+  await page.locator(".hand-card").first().click(CORNER);
   await expect(page.locator(".hand-card")).toHaveCount(13);
-  await expect(
-    page.getByRole("button", { name: "Play card", exact: true }),
-  ).toBeEnabled();
-  await page.getByRole("button", { name: "Play card", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Play / })).toBeEnabled();
+  await page.getByRole("button", { name: /^Play / }).click();
   await expect(page.locator(".hand-card")).toHaveCount(12);
+  await page.getByRole("button", { name: "Menu" }).click();
   await page.getByRole("button", { name: "How to play" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -94,7 +95,7 @@ test("production PWA survives an offline reload with its saved game", async ({
   });
   await page.reload();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-  await page.getByRole("button", { name: "Take your seat" }).click();
+  await page.getByRole("button", { name: "Practice with bots" }).click();
   await expect(page.locator(".turn-status")).toContainText("Your turn", {
     timeout: 10000,
   });
@@ -108,8 +109,8 @@ test("production PWA survives an offline reload with its saved game", async ({
     await page.evaluate(() => localStorage.getItem("mendikot.game.v1")),
   ).toBe(saved);
   await expect(page.locator(".table-tools")).toContainText("Offline");
-  await page.locator(".hand-card").first().click();
-  await page.getByRole("button", { name: "Play card", exact: true }).click();
+  await page.locator(".hand-card").first().click(CORNER);
+  await page.getByRole("button", { name: /^Play / }).click();
   await expect(page.locator(".hand-card")).toHaveCount(12);
 });
 function playingGame(): Game {
@@ -145,6 +146,8 @@ const VIEWS = [
   { width: 390, height: 844 },
   { width: 360, height: 780 },
   { width: 320, height: 740 },
+  { width: 320, height: 640 },
+  { width: 430, height: 932 },
   { width: 844, height: 390 },
   { width: 932, height: 430 },
   { width: 667, height: 375 },
@@ -195,6 +198,10 @@ async function checkLayout(
         w: document.documentElement.scrollWidth,
         h: document.documentElement.scrollHeight,
       },
+      // Inner scrollers must not hide overflow either.
+      innerScroll: [...document.querySelectorAll(".home, .sheet-body")]
+        .filter((e) => e.scrollHeight > e.clientHeight + 1)
+        .map((e) => e.className),
       small,
       buttons: [...document.querySelectorAll("button")]
         .filter(
@@ -219,6 +226,8 @@ async function checkLayout(
   expect(report.scroll.h, `${label} vertical overflow`).toBeLessThanOrEqual(
     v.height,
   );
+  if (v.height > v.width)
+    expect(report.innerScroll, `${label} inner scrolling`).toEqual([]);
   expect(report.small, `${label} text under 11px`).toEqual([]);
   for (const b of report.buttons) {
     expect(b.w, `${label} ${b.name} width`).toBeGreaterThanOrEqual(44);
@@ -268,7 +277,7 @@ for (const v of VIEWS) {
     for (const s of STATES) {
       await load(page, s.game);
       if (s.name === "playing") {
-        await page.locator(".hand-card.legal").first().click();
+        await page.locator(".hand-card.legal").first().click(CORNER);
         await expect(page.locator(".played-card").getByRole("img")).toHaveCount(
           3,
         );
@@ -281,12 +290,12 @@ for (const v of VIEWS) {
             / of (spades|hearts|clubs|diamonds)$/,
           );
         await expect(
-          page.getByRole("button", { name: "Play card", exact: true }),
+          page.getByRole("button", { name: /^Play / }),
         ).toBeEnabled();
       }
       if (s.name === "lobby")
         await expect(
-          page.getByRole("button", { name: "Take your seat" }),
+          page.getByRole("button", { name: "Practice with bots" }),
         ).toBeVisible();
       if (s.name === "choosing")
         await expect(
@@ -355,7 +364,7 @@ test("plays an entire deal through the interface and shows the result", async ({
   );
   await page.goto("/");
   await page.clock.install();
-  await page.getByRole("button", { name: "Take your seat" }).click();
+  await page.getByRole("button", { name: "Practice with bots" }).click();
   let complete = false;
   for (let i = 0; i < 150; i++) {
     await page.clock.fastForward(2500);
@@ -371,10 +380,8 @@ test("plays an entire deal through the interface and shows the result", async ({
       g.turn === 0 &&
       (await page.locator(".hand-card.legal").first().isEnabled())
     ) {
-      await page.locator(".hand-card.legal").first().click();
-      await page
-        .getByRole("button", { name: "Play card", exact: true })
-        .click();
+      await page.locator(".hand-card.legal").first().click(CORNER);
+      await page.getByRole("button", { name: /^Play / }).click();
     }
   }
   expect(complete).toBe(true);
@@ -401,7 +408,7 @@ test("home screen on a 320x568 phone stacks without overlapping", async ({
   await page.setViewportSize({ width: 320, height: 568 });
   await load(page, null);
   const boxes = await page.evaluate(() =>
-    [".bar", ".hero-cards", ".home-copy", ".home-controls"].map((q) => {
+    [".bar", ".hero-cards", ".home-hero h1", ".home-controls"].map((q) => {
       const r = document.querySelector(q)!.getBoundingClientRect();
       return { top: r.top, bottom: r.bottom };
     }),
@@ -411,4 +418,50 @@ test("home screen on a 320x568 phone stacks without overlapping", async ({
       boxes[i].top,
       `block ${i} starts below block ${i - 1}`,
     ).toBeGreaterThanOrEqual(boxes[i - 1].bottom - 1);
+  expect(boxes[3].bottom, "controls fit without scrolling").toBeLessThanOrEqual(
+    568,
+  );
+});
+
+test("portrait sheets fit without scrolling, sound settings included", async ({
+  page,
+}) => {
+  for (const view of [
+    { width: 320, height: 640 },
+    { width: 360, height: 780 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(view);
+    await load(page, playingGame());
+    await page.evaluate(() =>
+      localStorage.setItem(
+        "mendikot.preferences.v1",
+        JSON.stringify({ reducedMotion: true, sound: true }),
+      ),
+    );
+    await page.reload();
+    for (const open of [
+      ["Menu"],
+      ["Menu", "How to play"],
+      ["Menu", "New deal"],
+    ]) {
+      for (const name of open)
+        await page.getByRole("button", { name, exact: true }).click();
+      const body = page.locator(".sheet-body");
+      await expect(body).toBeVisible();
+      expect(
+        await body.evaluate((e) => e.scrollHeight <= e.clientHeight + 1),
+        `${view.width}x${view.height} ${open.join(" > ")} fits`,
+      ).toBe(true);
+      expect(
+        await page.evaluate(
+          () =>
+            document.querySelector("dialog")!.getBoundingClientRect().width <=
+            innerWidth,
+        ),
+      ).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).not.toBeVisible();
+    }
+  }
 });

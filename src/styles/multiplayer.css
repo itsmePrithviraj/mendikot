@@ -1,38 +1,34 @@
-/* Room screens extend the felt, ivory and brass of the existing table. */
+/* Room screens extend the felt, ivory and brass of the existing table.
+   Portrait phones must fit without scrolling; the scroller is a fallback for
+   short landscape screens. */
 .app[data-screen="room"] .table {
   grid-template-rows: minmax(0, 1fr);
 }
 .room-scroll {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--felt-500) transparent;
-  padding: var(--s5);
+  padding: var(--s2) var(--s5) var(--s4);
 }
 .room-panel {
-  width: min(100%, 560px);
+  width: min(100%, 520px);
   margin: auto;
-  padding-block: var(--s5);
   display: flex;
   flex-direction: column;
   gap: var(--s5);
 }
 .room-panel.lobby {
   gap: var(--s4);
-  padding-block: var(--s4);
 }
 .room-panel h1 {
   font: 600 var(--fs-display)/1.05 var(--font-display);
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
-.room-intro {
-  display: grid;
-  gap: var(--s3);
-}
-.room-intro > svg {
-  color: var(--brass);
-}
-.room-intro p,
+.room-panel > p,
 .room-note {
   color: var(--on-felt-2);
 }
@@ -43,46 +39,58 @@
 .room-note:empty {
   display: none;
 }
+
+/* Create or join */
 .room-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--hairline-strong);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 .room-tabs button {
-  flex: 1;
-  min-height: 48px;
+  min-height: 44px;
+  border-radius: var(--r-pill);
+  font-weight: 600;
   color: var(--on-felt-2);
-  padding: var(--s2);
-  border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 .room-tabs button.active {
   color: var(--brass-bright);
-  border-bottom-color: var(--brass);
+  background: rgb(210 181 122 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(210 181 122 / 0.55);
 }
 .room-form {
   display: grid;
-  gap: var(--s5);
+  gap: var(--s4);
+}
+.room-form .btn {
+  margin-top: var(--s2);
 }
 .room-field {
   display: grid;
   gap: var(--s2);
+  font-size: var(--fs-sm);
   font-weight: 500;
+  color: var(--on-felt-2);
 }
 .room-field input {
   width: 100%;
   min-width: 0;
-  min-height: 48px;
+  min-height: 50px;
   padding: var(--s3) var(--s4);
   border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-sm);
-  background: var(--room);
+  border-radius: var(--r-md);
+  background: rgb(0 0 0 / 0.22);
   color: var(--on-felt);
+  font-size: var(--fs-lg);
   caret-color: var(--brass-bright);
   -webkit-user-select: text;
   user-select: text;
 }
-.room-field input::placeholder {
-  color: var(--on-felt-2);
-  opacity: 1;
+.room-field input:focus {
+  border-color: rgb(210 181 122 / 0.6);
 }
 .room-field input::selection {
   color: var(--ivory-ink);
@@ -92,88 +100,124 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.btn-link {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 var(--s2);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--on-felt-2);
+  text-decoration: underline;
+  text-decoration-color: rgb(255 255 255 / 0.25);
+  text-underline-offset: 4px;
+}
+.btn-link:disabled {
+  opacity: 0.5;
+}
 .room-alert {
-  width: min(100%, 560px);
-  margin: var(--s2) auto;
+  width: min(100%, 520px);
+  margin: 0 auto var(--s2);
   padding: var(--s3) var(--s4);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--ivory);
   color: var(--ivory-ink);
   line-height: 1.5;
 }
+
+/* Lobby */
 .room-invite {
   display: flex;
-  gap: var(--s4);
+  gap: var(--s3);
   align-items: center;
   justify-content: space-between;
-  padding-block: var(--s4);
-  border-block: 1px solid var(--hairline-strong);
 }
-.room-invite > div {
-  display: grid;
-  gap: var(--s1);
+.room-code {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
 }
-.room-invite span {
+.room-code span {
   font-size: var(--fs-sm);
   color: var(--on-felt-2);
 }
-.room-invite strong {
-  font-size: var(--fs-xl);
+.room-code strong {
+  font-size: 22px;
+  font-weight: 600;
   letter-spacing: 0.06em;
   -webkit-user-select: text;
   user-select: text;
 }
+.room-code .icon-btn {
+  margin-left: calc(var(--s2) * -1);
+}
+.room-invite .btn {
+  min-height: 44px;
+  padding: 0 var(--s4);
+}
 .room-teams {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--s5);
+  gap: var(--s4);
 }
 .room-teams h2 {
-  font-size: var(--fs-lg);
-  font-weight: 500;
-  margin-bottom: var(--s3);
+  margin-bottom: var(--s1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--on-felt-2);
 }
 .lobby-seat {
-  min-height: 76px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   gap: var(--s2);
-  padding-block: var(--s3);
   border-top: 1px solid var(--hairline);
 }
 .lobby-seat .avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   flex: none;
+  font-size: 17px;
 }
 .lobby-seat.is-you .avatar {
-  color: var(--brass-bright);
+  box-shadow: inset 0 0 0 1.5px var(--brass);
+}
+.lobby-seat.is-ready .avatar {
+  color: var(--felt-900);
+  background: var(--brass);
+  box-shadow: none;
+}
+.avatar.empty {
+  background: none;
+  box-shadow: none;
+  border: 1.5px dashed rgb(210 181 122 / 0.5);
 }
 .lobby-person {
   min-width: 0;
   display: grid;
-  gap: var(--s1);
+  gap: 1px;
+  line-height: 1.25;
 }
 .lobby-person strong {
   font-size: var(--fs-md);
-  overflow-wrap: anywhere;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.lobby-person span,
-.lobby-seat > button span {
+.lobby-person span {
   font-size: var(--fs-xs);
   color: var(--on-felt-2);
 }
 .lobby-seat > button {
   min-height: 48px;
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  border-radius: var(--r-sm);
   text-align: left;
-  display: grid;
-  align-content: center;
-  gap: var(--s1);
-  color: var(--brass-bright);
-}
-.lobby-seat > svg {
-  flex: none;
+  font-weight: 600;
   color: var(--brass-bright);
 }
 .room-panel > fieldset,
@@ -183,22 +227,39 @@
   margin: 0;
   min-width: 0;
 }
+.room-mode {
+  font-size: var(--fs-sm);
+  color: var(--on-felt-2);
+}
+.room-mode strong {
+  color: var(--on-felt);
+  font-weight: 600;
+}
 .room-ready {
-  display: flex;
+  display: grid;
   gap: var(--s3);
 }
-.room-ready > button {
-  flex: 1;
+.room-waiting {
+  font-size: var(--fs-sm);
+  color: var(--on-felt-2);
+  text-align: center;
+}
+.room-ready-actions {
+  display: flex;
+  gap: var(--s2);
+}
+.room-ready-actions > .btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .room-footer {
   display: flex;
-  gap: var(--s2);
-  align-items: center;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s4);
+  margin-top: calc(var(--s2) * -1);
 }
-.room-footer > .icon-btn {
-  margin-left: auto;
-}
+
+/* "Room" sheet during a deal */
 .room-player-list {
   list-style: none;
   padding: 0;
@@ -219,9 +280,6 @@
 .online-entry-btn {
   width: 100%;
 }
-.online-app .turn-status {
-  text-wrap: balance;
-}
 .online-app .seat {
   max-width: 100%;
 }
@@ -240,23 +298,40 @@
   opacity: 0.65;
 }
 @media (hover: hover) and (pointer: fine) {
-  .room-tabs button:hover,
+  .room-tabs button:not(.active):hover,
   .lobby-seat > button:hover {
-    background: var(--wash);
+    color: var(--on-felt);
+  }
+  .btn-link:hover {
+    color: var(--on-felt);
   }
 }
 @media (max-width: 359px) {
   .room-scroll {
-    padding: var(--s4);
+    padding-inline: var(--s4);
   }
   .room-teams {
     gap: var(--s3);
   }
-  .room-invite {
-    flex-wrap: wrap;
+  .room-code span {
+    display: none;
   }
-  .room-ready .btn {
-    padding-inline: var(--s4);
+  .room-code strong {
+    font-size: 20px;
+  }
+  .room-ready-actions .btn {
+    padding-inline: var(--s3);
+  }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+  .room-panel {
+    gap: var(--s4);
+  }
+  .room-panel.lobby {
+    gap: var(--s3);
+  }
+  .lobby-seat {
+    min-height: 50px;
   }
 }
 @media (orientation: landscape) and (max-height: 520px) {
@@ -265,17 +340,13 @@
   }
   .room-panel {
     width: min(100%, 640px);
-    padding-block: var(--s2);
-    gap: var(--s4);
+    gap: var(--s3);
   }
-  .room-intro > svg {
-    display: none;
-  }
-  .room-intro h1 {
-    font-size: 32px;
+  .room-panel h1 {
+    font-size: 30px;
   }
   .room-form {
-    gap: var(--s4);
+    gap: var(--s3);
   }
   .online-entry-btn {
     min-height: 44px;

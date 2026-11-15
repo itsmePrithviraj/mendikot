@@ -104,9 +104,7 @@ function Pips({ card }: { card: Card }) {
 }
 
 function CompactCentre({ card }: { card: Card }) {
-  if (card.rank === 10)
-    return <use href="#sheep" x="84" y="192" width="148" height="130" />;
-  if (card.rank > 10)
+  if (card.rank > 10 && card.rank < 14)
     return (
       <use
         href={`#crest-${crest(card.rank)}`}
@@ -166,7 +164,17 @@ export const CardFace = memo(function CardFace({
             {label}
           </text>
           <use href={`#s-${card.suit}`} x="30" y="120" width="62" height="62" />
-          <g className="pip">
+          {card.rank === 10 && (
+            <use
+              href="#sheep"
+              className="ten-mark"
+              x="26"
+              y="200"
+              width="72"
+              height="63"
+            />
+          )}
+          <g className="pip compact-art">
             <CompactCentre card={card} />
           </g>
         </g>

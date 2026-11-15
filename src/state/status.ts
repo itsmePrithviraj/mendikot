@@ -19,26 +19,19 @@ export function statusOf(
   stage: Stage,
   names: readonly string[] = NAMES,
 ): Status {
-  if (!game) return { text: "Your seat is waiting.", mine: false };
+  if (!game) return { text: "", mine: false };
   const choosing = game.phase === "choosing-trump";
   if (stage === "shuffle") return { text: "Shuffling…", mine: false };
-  if (stage === "deal")
-    return {
-      text: choosing ? "Dealing five cards each…" : "Dealing your cards…",
-      mine: false,
-    };
+  if (stage === "deal") return { text: "Dealing…", mine: false };
   const result = resultOf(game);
   if (result)
     return {
-      text:
-        result.winner === 0
-          ? "Your team wins. Nicely played."
-          : "Their team takes this one.",
+      text: result.winner === 0 ? "Your team wins" : "Their team wins",
       mine: false,
     };
   if (choosing)
     return game.turn === 0
-      ? { text: "Your turn · choose hukum", mine: true }
+      ? { text: "Eight more cards after hukum", mine: false }
       : { text: `${names[game.turn]} is choosing hukum…`, mine: false };
   if (game.phase === "trick-complete") {
     const winner = winnerOf(game.trick, game.trump);
@@ -51,7 +44,7 @@ export function statusOf(
     };
   }
   if (game.turn !== 0)
-    return { text: `${names[game.turn]} is thinking…`, mine: false };
+    return { text: `${names[game.turn]}’s turn`, mine: false };
   if (!game.trick.length)
     return { text: "Your turn · lead any card", mine: true };
   const led = game.trick[0].card.suit;

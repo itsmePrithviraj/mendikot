@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import type { Browser, Page } from "@playwright/test";
 import type { RoomSnapshot } from "../../src/multiplayer/protocol";
+/** Hand cards overlap; tap the visible index corner as a player would. */
+const CORNER = { position: { x: 14, y: 24 } };
 
 const baseURL = "http://localhost:8787";
 async function player(browser: Browser) {
@@ -43,12 +45,18 @@ async function table(
     .last()
     .click();
   await pages[0].getByLabel("Your name").fill(names[0]);
-  if (mode === "choose")
-    await pages[0].getByLabel("Choose hukum", { exact: false }).check();
   await pages[0]
     .getByRole("button", { name: "Create room", exact: true })
     .click();
   await expect(pages[0].locator(".room-invite strong")).toBeVisible();
+  // New rooms start in cut hukum; the host switches mode in the lobby.
+  if (mode === "choose") {
+    // The radio is controlled by the room, so it flips after the server replies.
+    await pages[0].getByLabel("Choose hukum", { exact: false }).click();
+    await expect(
+      pages[0].getByLabel("Choose hukum", { exact: false }),
+    ).toBeChecked();
+  }
   const code = (await pages[0].locator(".room-invite strong").textContent())!;
   for (let i = 1; i < 4; i++) {
     await pages[i].goto(`/?room=${code}`);
@@ -69,7 +77,7 @@ async function readyAndStart(pages: Page[]) {
         .getByRole("button", { name: "Ready to play", exact: true })
         .click();
       await expect(
-        page.getByRole("button", { name: "Not ready", exact: true }),
+        page.getByRole("button", { name: "Undo ready", exact: true }),
       ).toBeEnabled();
     }),
   );
@@ -136,10 +144,8 @@ for (const mode of ["cut", "choose"] as const) {
         const page = pages[game.turn]; // Host is absolute seat zero for this deal.
         const own = await snapshot(page, code);
         await expect(page.locator(".hand-card.legal").first()).toBeEnabled();
-        await page.locator(".hand-card.legal").first().click();
-        await page
-          .getByRole("button", { name: "Play card", exact: true })
-          .click();
+        await page.locator(".hand-card.legal").first().click(CORNER);
+        await page.getByRole("button", { name: /^Play / }).click();
         await expect(page.locator(".hand-card")).toHaveCount(
           own.game!.hand.length - 1,
         );
@@ -355,6 +361,8 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
       ["desktop", 1440, 900],
       ["mobile", 390, 844],
       ["narrow", 320, 740],
+      ["small", 320, 640],
+      ["android", 360, 780],
       ["landscape", 844, 390],
     ] as const) {
       await page.setViewportSize({ width, height });
@@ -370,6 +378,13 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
           .locator(".room-scroll")
           .evaluate((e) => e.scrollWidth <= e.clientWidth),
       ).toBe(true);
+      if (height > width)
+        expect(
+          await page
+            .locator(".room-scroll")
+            .evaluate((e) => e.scrollHeight <= e.clientHeight),
+          `${name} portrait room screen fits without scrolling`,
+        ).toBe(true);
     }
     await page.getByLabel("Your name").fill("Prithviraj");
     await page
@@ -380,6 +395,8 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
       ["desktop", 1440, 900],
       ["mobile", 390, 844],
       ["narrow", 320, 740],
+      ["small", 320, 640],
+      ["android", 360, 780],
       ["landscape", 844, 390],
     ] as const) {
       await page.setViewportSize({ width, height });
@@ -396,6 +413,13 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
           .locator(".room-scroll")
           .evaluate((e) => e.scrollWidth <= e.clientWidth),
       ).toBe(true);
+      if (height > width)
+        expect(
+          await page
+            .locator(".room-scroll")
+            .evaluate((e) => e.scrollHeight <= e.clientHeight),
+          `${name} portrait room screen fits without scrolling`,
+        ).toBe(true);
       await page
         .getByRole("button", { name: "Ready to play", exact: true })
         .scrollIntoViewIfNeeded();

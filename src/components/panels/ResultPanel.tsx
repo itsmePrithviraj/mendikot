@@ -1,15 +1,14 @@
-import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { resultOf, SUITS, tens } from "../../game/engine";
 import type { PlayerGame } from "../../game/view";
-import { Sheep, SuitGlyph } from "../cards";
+import { CardFace } from "../cards";
 
 /** Seen from the viewer's team (team 0). */
 function headline(ours: boolean, coat: boolean, whitewash: boolean) {
-  if (whitewash) return ours ? "A clean sweep." : "Swept. Shake it off.";
-  if (coat) return ours ? "A Mendikot!" : "They made Mendikot.";
-  return ours ? "Beautifully played." : "The next one is yours.";
+  if (whitewash) return ours ? "Whitewash!" : "Whitewashed.";
+  if (coat) return ours ? "Mendikot!" : "They made Mendikot.";
+  return ours ? "You win." : "They win.";
 }
 
 export function ResultPanel({
@@ -44,13 +43,11 @@ export function ResultPanel({
       className={`panel result-panel ${ours ? "is-win" : "is-loss"}`}
       aria-live="polite"
     >
-      <Sheep className="result-sheep" />
       <h2>{headline(ours, result.coat, result.whitewash)}</h2>
-      <p className="result-line">
-        {ours ? "Your team wins" : "Their team wins"} ·{" "}
+      <p className="result-line tnum">
         {tied
-          ? `tens split 2–2, ${game.tricks[result.winner]}–${game.tricks[loser]} on tricks`
-          : `${won.length} tens · ${game.tricks[result.winner]} tricks`}
+          ? `Tens split 2–2 · ${game.tricks[result.winner]}–${game.tricks[loser]} on tricks`
+          : `${won.length} of 4 tens · ${game.tricks[result.winner]} tricks`}
       </p>
       <div
         className="result-tens"
@@ -60,11 +57,10 @@ export function ResultPanel({
         {SUITS.map((s, i) => (
           <span
             key={s}
-            className={`ten-chip ${s} ${won.some((c) => c.suit === s) ? "won" : ""}`}
+            className={`ten-card${won.some((c) => c.suit === s) ? " won" : ""}`}
             style={{ "--i": i } as CSSProperties}
           >
-            10
-            <SuitGlyph suit={s} />
+            <CardFace card={{ id: `${s}-10`, rank: 10, suit: s }} />
           </span>
         ))}
       </div>
@@ -75,7 +71,7 @@ export function ResultPanel({
               Change mode
             </button>
             <button className="btn btn-primary" onClick={onAgain}>
-              Deal again <ArrowRight strokeWidth={2} />
+              Deal again
             </button>
           </>
         )}
