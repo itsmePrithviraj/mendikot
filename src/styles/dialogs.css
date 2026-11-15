@@ -78,10 +78,6 @@
   display: grid;
   gap: var(--s2);
 }
-.rules-list li {
-  padding-left: var(--s3);
-  border-left: 2px solid rgb(169 139 79 / 0.45);
-}
 .small-print {
   font-size: var(--fs-sm);
   color: var(--ivory-ink-2);

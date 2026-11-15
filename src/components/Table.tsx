@@ -61,7 +61,10 @@ export function Table({
     centre = <Trick plays={game.trick} winner={winner} />;
   const panel = game.phase === "complete" || (choosing && game.turn === 0);
   return (
-    <section className={`felt${panel ? " has-panel" : ""}`} aria-label="Table">
+    <section
+      className={`felt${panel ? " has-panel" : ""}${choosing && game.turn === 0 ? " is-choosing" : ""}`}
+      aria-label="Table"
+    >
       {game.lastTrick && game.phase !== "complete" && (
         <button
           className="chip last-trick-btn"

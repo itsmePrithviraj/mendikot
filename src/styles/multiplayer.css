@@ -313,8 +313,11 @@
   .room-teams {
     gap: var(--s3);
   }
+  .room-code span {
+    display: none;
+  }
   .room-code strong {
-    font-size: 19px;
+    font-size: 20px;
   }
   .room-ready-actions .btn {
     padding-inline: var(--s3);

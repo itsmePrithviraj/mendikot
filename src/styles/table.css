@@ -118,15 +118,10 @@
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.3));
 }
 .hukum-empty {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1.5px dashed rgb(210 181 122 / 0.55);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--brass);
+  width: 17px;
+  height: 23px;
+  border-radius: 3px;
+  border: 1.5px dashed rgb(210 181 122 / 0.6);
 }
 
 /* ---------- Felt ---------- */
@@ -282,6 +277,9 @@
   color: var(--on-felt-2);
   white-space: nowrap;
 }
+.seat-bot::before {
+  content: " · ";
+}
 .app[data-phase="complete"] .seat {
   visibility: hidden;
 }
@@ -292,10 +290,7 @@
     var(--brass-bright),
     var(--brass)
   );
-  box-shadow:
-    0 0 0 3px rgb(210 181 122 / 0.28),
-    0 0 18px rgb(210 181 122 / 0.45);
-  animation: turn-pulse 1.6s var(--ease-out) infinite;
+  box-shadow: 0 0 0 3px rgb(210 181 122 / 0.28);
 }
 .seat.is-turn .seat-name {
   color: var(--brass-bright);
@@ -312,6 +307,9 @@
 }
 .felt.has-panel .centre {
   grid-column: 1 / -1;
+}
+.felt.is-choosing .centre {
+  align-items: end;
 }
 
 /* ---------- Panels ---------- */
@@ -388,23 +386,35 @@
 .result-panel:focus {
   outline: none;
 }
+/* Portrait: the outcome sits mid-felt and the buttons drop to the thumb zone,
+   where Play was. */
+@media (orientation: portrait) {
+  .result-panel {
+    height: 100%;
+    padding-bottom: var(--s3);
+  }
+  .result-panel h2 {
+    margin-top: auto;
+  }
+  .result-actions {
+    margin-top: auto;
+  }
+}
 .result-tens {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 68px));
+  grid-template-columns: repeat(4, minmax(0, 76px));
   justify-content: center;
   gap: var(--s2);
   width: 100%;
   margin: var(--s3) 0 var(--s4);
 }
 .ten-card {
-  opacity: 0.32;
-  filter: saturate(0.4);
+  opacity: 0.42;
   animation: pop-in var(--t-base) var(--ease-out) both;
   animation-delay: calc(var(--i) * 60ms + 200ms);
 }
 .ten-card.won {
   opacity: 1;
-  filter: none;
   transform: translateY(-6px);
 }
 .ten-card.won .card {
@@ -489,7 +499,7 @@
   min-height: 0;
 }
 .hero-cards {
-  --hero-w: clamp(64px, 15dvh, 128px);
+  --hero-w: clamp(64px, 16dvh, 140px);
   position: relative;
   width: calc(var(--hero-w) * 2.5);
   height: calc(var(--hero-w) * 1.6);
@@ -515,6 +525,7 @@
   transform: rotate(16deg) translateX(38%);
 }
 .home-hero h1 {
+  margin-top: var(--s3);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: var(--fs-display);
@@ -635,10 +646,15 @@
 }
 
 /* ---------- Portrait ---------- */
+/* Side seats drop "Opponent" in portrait but always keep "Bot" / "Away". */
 @media (orientation: portrait) {
-  .seat-1 .seat-meta,
-  .seat-3 .seat-meta {
+  .seat-1 .seat-role,
+  .seat-3 .seat-role {
     display: none;
+  }
+  .seat-1 .seat-bot::before,
+  .seat-3 .seat-bot::before {
+    content: none;
   }
   .seat-1 .seat-name,
   .seat-3 .seat-name {
@@ -675,6 +691,10 @@
   }
   .seat-2 {
     gap: 6px;
+  }
+  .seat-1 .seat-name,
+  .seat-3 .seat-name {
+    font-size: var(--fs-xs);
   }
   .home {
     padding-inline: var(--s4);
@@ -839,10 +859,13 @@
   .hukum-label {
     font-size: var(--fs-md);
   }
-  .hukum-chip .suit-glyph,
-  .hukum-empty {
+  .hukum-chip .suit-glyph {
     width: 28px;
     height: 28px;
+  }
+  .hukum-empty {
+    width: 20px;
+    height: 27px;
   }
   .turn-status {
     font-size: var(--fs-lg);

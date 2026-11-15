@@ -191,7 +191,10 @@ export function RoomLobby({
             <Copy size={18} />
           </button>
         </div>
-        <button className="btn btn-primary" onClick={() => void share()}>
+        <button
+          className={`btn ${room.players.length < 4 ? "btn-primary" : "btn-ghost"}`}
+          onClick={() => void share()}
+        >
           <Share2 size={18} /> Invite
         </button>
       </div>
@@ -289,6 +292,13 @@ export function RoomLobby({
             </button>
           ) : (
             <>
+              <button
+                className="btn btn-ghost"
+                disabled={disabled}
+                onClick={() => send({ type: "ready", ready: false })}
+              >
+                Undo ready
+              </button>
               {host && (
                 <button
                   className="btn btn-primary"
@@ -298,13 +308,6 @@ export function RoomLobby({
                   Start deal
                 </button>
               )}
-              <button
-                className="btn btn-ghost"
-                disabled={disabled}
-                onClick={() => send({ type: "ready", ready: false })}
-              >
-                Not ready
-              </button>
             </>
           )}
         </div>

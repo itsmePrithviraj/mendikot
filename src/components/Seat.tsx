@@ -26,10 +26,12 @@ export function Seat({
           {name}
         </strong>
         <span className="seat-meta">
-          {seat === PARTNER ? "Partner" : "Opponent"}
-          <span className="seat-bot">
-            {online ? (away ? " · Away" : "") : " · Bot"}
+          <span className="seat-role">
+            {seat === PARTNER ? "Partner" : "Opponent"}
           </span>
+          {(away || !online) && (
+            <span className="seat-bot">{away ? "Away" : "Bot"}</span>
+          )}
         </span>
       </span>
       {turn && <span className="sr-only">{name}’s turn</span>}

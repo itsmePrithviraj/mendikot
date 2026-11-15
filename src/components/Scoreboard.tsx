@@ -51,9 +51,7 @@ export function HukumChip({ game }: { game: PlayerGame }) {
       {game.trump ? (
         <SuitGlyph suit={game.trump} />
       ) : (
-        <span className="hukum-empty" aria-hidden="true">
-          ?
-        </span>
+        <span className="hukum-empty" aria-hidden="true" />
       )}
     </div>
   );

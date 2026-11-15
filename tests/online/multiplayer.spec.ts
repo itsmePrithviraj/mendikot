@@ -77,7 +77,7 @@ async function readyAndStart(pages: Page[]) {
         .getByRole("button", { name: "Ready to play", exact: true })
         .click();
       await expect(
-        page.getByRole("button", { name: "Not ready", exact: true }),
+        page.getByRole("button", { name: "Undo ready", exact: true }),
       ).toBeEnabled();
     }),
   );
@@ -361,6 +361,8 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
       ["desktop", 1440, 900],
       ["mobile", 390, 844],
       ["narrow", 320, 740],
+      ["small", 320, 640],
+      ["android", 360, 780],
       ["landscape", 844, 390],
     ] as const) {
       await page.setViewportSize({ width, height });
@@ -376,6 +378,13 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
           .locator(".room-scroll")
           .evaluate((e) => e.scrollWidth <= e.clientWidth),
       ).toBe(true);
+      if (height > width)
+        expect(
+          await page
+            .locator(".room-scroll")
+            .evaluate((e) => e.scrollHeight <= e.clientHeight),
+          `${name} portrait room screen fits without scrolling`,
+        ).toBe(true);
     }
     await page.getByLabel("Your name").fill("Prithviraj");
     await page
@@ -386,6 +395,8 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
       ["desktop", 1440, 900],
       ["mobile", 390, 844],
       ["narrow", 320, 740],
+      ["small", 320, 640],
+      ["android", 360, 780],
       ["landscape", 844, 390],
     ] as const) {
       await page.setViewportSize({ width, height });
@@ -402,6 +413,13 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
           .locator(".room-scroll")
           .evaluate((e) => e.scrollWidth <= e.clientWidth),
       ).toBe(true);
+      if (height > width)
+        expect(
+          await page
+            .locator(".room-scroll")
+            .evaluate((e) => e.scrollHeight <= e.clientHeight),
+          `${name} portrait room screen fits without scrolling`,
+        ).toBe(true);
       await page
         .getByRole("button", { name: "Ready to play", exact: true })
         .scrollIntoViewIfNeeded();

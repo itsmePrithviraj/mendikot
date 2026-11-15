@@ -196,6 +196,10 @@ async function checkLayout(
         w: document.documentElement.scrollWidth,
         h: document.documentElement.scrollHeight,
       },
+      // Inner scrollers must not hide overflow either.
+      innerScroll: [...document.querySelectorAll(".home, .sheet-body")]
+        .filter((e) => e.scrollHeight > e.clientHeight + 1)
+        .map((e) => e.className),
       small,
       buttons: [...document.querySelectorAll("button")]
         .filter(
@@ -220,6 +224,8 @@ async function checkLayout(
   expect(report.scroll.h, `${label} vertical overflow`).toBeLessThanOrEqual(
     v.height,
   );
+  if (v.height > v.width)
+    expect(report.innerScroll, `${label} inner scrolling`).toEqual([]);
   expect(report.small, `${label} text under 11px`).toEqual([]);
   for (const b of report.buttons) {
     expect(b.w, `${label} ${b.name} width`).toBeGreaterThanOrEqual(44);
@@ -413,4 +419,47 @@ test("home screen on a 320x568 phone stacks without overlapping", async ({
   expect(boxes[3].bottom, "controls fit without scrolling").toBeLessThanOrEqual(
     568,
   );
+});
+
+test("portrait sheets fit without scrolling, sound settings included", async ({
+  page,
+}) => {
+  for (const view of [
+    { width: 320, height: 640 },
+    { width: 360, height: 780 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(view);
+    await load(page, playingGame());
+    await page.evaluate(() =>
+      localStorage.setItem(
+        "mendikot.preferences.v1",
+        JSON.stringify({ reducedMotion: true, sound: true }),
+      ),
+    );
+    await page.reload();
+    for (const open of [
+      ["Menu"],
+      ["Menu", "How to play"],
+      ["Menu", "New deal"],
+    ]) {
+      for (const name of open)
+        await page.getByRole("button", { name, exact: true }).click();
+      const body = page.locator(".sheet-body");
+      await expect(body).toBeVisible();
+      expect(
+        await body.evaluate((e) => e.scrollHeight <= e.clientHeight + 1),
+        `${view.width}x${view.height} ${open.join(" > ")} fits`,
+      ).toBe(true);
+      expect(
+        await page.evaluate(
+          () =>
+            document.querySelector("dialog")!.getBoundingClientRect().width <=
+            innerWidth,
+        ),
+      ).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).not.toBeVisible();
+    }
+  }
 });

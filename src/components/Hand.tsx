@@ -62,7 +62,7 @@ export function Hand({
   }
   return (
     <div
-      className={`hand${dealing ? " dealing" : ""}${cards.length <= 5 ? " five-cards" : ""}`}
+      className={`hand${dealing ? " dealing" : ""}${cards.length <= 5 ? " five-cards" : ""}${myTurn && cards.some((c) => !legal.has(c.id)) ? " restricted" : ""}`}
       ref={handRef}
       role="group"
       aria-label="Your cards"
