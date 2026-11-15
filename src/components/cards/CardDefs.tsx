@@ -22,7 +22,13 @@ export const SHEEP_BODY =
  */
 export const CardDefs = memo(function CardDefs() {
   return (
-    <svg className="card-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <svg
+      className="card-defs"
+      width="0"
+      height="0"
+      aria-hidden="true"
+      focusable="false"
+    >
       <defs>
         {Object.entries(SUIT_PATHS).map(([suit, d]) => (
           <symbol key={suit} id={`s-${suit}`} viewBox="0 0 100 100">
@@ -42,8 +48,22 @@ export const CardDefs = memo(function CardDefs() {
             strokeWidth="2.4"
             strokeLinejoin="round"
           />
-          <ellipse cx="44" cy="15.5" rx="5.6" ry="2.8" transform="rotate(-28 44 15.5)" fill="currentColor" />
-          <ellipse cx="51" cy="23" rx="8.2" ry="10.4" transform="rotate(24 51 23)" fill="currentColor" />
+          <ellipse
+            cx="44"
+            cy="15.5"
+            rx="5.6"
+            ry="2.8"
+            transform="rotate(-28 44 15.5)"
+            fill="currentColor"
+          />
+          <ellipse
+            cx="51"
+            cy="23"
+            rx="8.2"
+            ry="10.4"
+            transform="rotate(24 51 23)"
+            fill="currentColor"
+          />
           <circle cx="53.6" cy="20.4" r="1.8" className="sheep-eye" />
         </symbol>
         <symbol id="crest-k" viewBox="0 0 100 100">
@@ -62,7 +82,10 @@ export const CardDefs = memo(function CardDefs() {
           />
         </symbol>
         <symbol id="crest-j" viewBox="0 0 100 100">
-          <path fill="currentColor" d="M74 8C42 14 24 44 26 84C52 68 70 46 74 8Z" />
+          <path
+            fill="currentColor"
+            d="M74 8C42 14 24 44 26 84C52 68 70 46 74 8Z"
+          />
           <path
             d="M26 86 64 26"
             fill="none"
@@ -70,9 +93,19 @@ export const CardDefs = memo(function CardDefs() {
             strokeWidth="3"
             strokeLinecap="round"
           />
-          <path d="M18 88H62" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+          <path
+            d="M18 88H62"
+            stroke="currentColor"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
         </symbol>
-        <pattern id="back-weave" width="20" height="20" patternUnits="userSpaceOnUse">
+        <pattern
+          id="back-weave"
+          width="20"
+          height="20"
+          patternUnits="userSpaceOnUse"
+        >
           <path
             d="M0 0 20 20M20 0 0 20"
             className="weave-line"
@@ -87,12 +120,40 @@ export const CardDefs = memo(function CardDefs() {
         </pattern>
         <symbol id="card-back" viewBox="0 0 250 350">
           <rect width="250" height="350" rx="16" className="back-paper" />
-          <rect x="9" y="9" width="232" height="332" rx="10" className="back-felt" />
-          <rect x="19" y="19" width="212" height="312" rx="6" fill="url(#back-weave)" />
-          <rect x="25" y="25" width="200" height="300" rx="4" className="back-frame" />
+          <rect
+            x="9"
+            y="9"
+            width="232"
+            height="332"
+            rx="10"
+            className="back-felt"
+          />
+          <rect
+            x="19"
+            y="19"
+            width="212"
+            height="312"
+            rx="6"
+            fill="url(#back-weave)"
+          />
+          <rect
+            x="25"
+            y="25"
+            width="200"
+            height="300"
+            rx="4"
+            className="back-frame"
+          />
           <circle cx="125" cy="175" r="46" className="back-medallion" />
           <circle cx="125" cy="175" r="39" className="back-medallion-ring" />
-          <use href="#sheep" x="94" y="148" width="62" height="54" className="back-sheep" />
+          <use
+            href="#sheep"
+            x="94"
+            y="148"
+            width="62"
+            height="54"
+            className="back-sheep"
+          />
         </symbol>
       </defs>
     </svg>

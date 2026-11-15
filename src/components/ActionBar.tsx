@@ -15,7 +15,11 @@ export function ActionBar({
   return (
     <div className="actions">
       {phase === "playing" && (
-        <button className="btn btn-primary play-btn" disabled={!canPlay} onClick={onPlay}>
+        <button
+          className="btn btn-primary play-btn"
+          disabled={!canPlay}
+          onClick={onPlay}
+        >
           Play card <ArrowRight strokeWidth={2} />
           {haptic && <HapticSwitch disabled={!canPlay} />}
         </button>

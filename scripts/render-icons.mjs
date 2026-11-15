@@ -9,8 +9,18 @@ const pub = fileURLToPath(new URL("../public/", import.meta.url));
 const jobs = [
   { src: "icon.svg", out: "icon-192.png", size: 192, opaque: false },
   { src: "icon.svg", out: "icon-512.png", size: 512, opaque: false },
-  { src: "icon-maskable.svg", out: "icon-maskable.png", size: 512, opaque: true },
-  { src: "icon-maskable.svg", out: "apple-touch-icon.png", size: 180, opaque: true },
+  {
+    src: "icon-maskable.svg",
+    out: "icon-maskable.png",
+    size: 512,
+    opaque: true,
+  },
+  {
+    src: "icon-maskable.svg",
+    out: "apple-touch-icon.png",
+    size: 180,
+    opaque: true,
+  },
 ];
 
 const browser = await chromium.launch();

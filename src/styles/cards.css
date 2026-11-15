@@ -393,7 +393,8 @@
 .trick.is-complete .played-card {
   animation:
     play-in var(--t-base) var(--ease-out) both,
-    collect var(--t-slow) var(--ease-in) calc(var(--pace-hold) - var(--t-slow) - 60ms) forwards;
+    collect var(--t-slow) var(--ease-in)
+      calc(var(--pace-hold) - var(--t-slow) - 60ms) forwards;
 }
 
 /* Shuffle */
@@ -517,7 +518,8 @@
 .reduce-motion .trick.is-complete .played-card {
   animation:
     fade-in var(--t-fast) linear both,
-    fade-out var(--t-fast) linear calc(var(--pace-hold) - var(--t-fast) - 60ms) forwards;
+    fade-out var(--t-fast) linear calc(var(--pace-hold) - var(--t-fast) - 60ms)
+      forwards;
 }
 .reduce-motion .seat.is-turn .avatar,
 .reduce-motion .seat.is-winner .avatar,
