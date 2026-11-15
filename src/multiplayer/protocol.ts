@@ -39,7 +39,8 @@ export interface RoomSnapshot {
   mode: Mode;
   players: RoomPlayer[];
   game: PlayerGame | null;
-  endedReason: string | null;
+  /** The latest table event, such as who left or why a deal ended early. */
+  notice: string | null;
   /** When the earliest disconnected seat will be released, if any. */
   reconnectDeadline: number | null;
 }

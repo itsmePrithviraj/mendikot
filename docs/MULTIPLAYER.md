@@ -63,7 +63,7 @@ Creating or joining a room gives the browser a random 256-bit token in a room-sc
 
 The room code is an invitation, not a seat credential. It is safe to put in the invite URL. `sessionStorage` remembers only the room code for that tab. Clearing cookies loses the ability to reclaim a reserved seat; guest identity does not transfer automatically to another device.
 
-Mutating requests and WebSocket upgrades must carry the same origin as the game. No credentials or private hands are put in URLs, public broadcasts, or frontend local saves.
+Mutating requests and WebSocket upgrades must carry the same origin as the game. No credentials or private hands are put in URLs, public broadcasts, or frontend local saves. The Worker reads POST bodies into memory (at most 2 KB, otherwise `413`) before forwarding them to a room.
 
 ## Stage 4: WebSockets carry requests and private snapshots
 
@@ -99,13 +99,15 @@ The WebSocket hibernation API keeps connections on Cloudflare's network while al
 
 If a socket drops:
 
-1. The seat is held for two minutes after disconnection is detected.
-2. New card/trump moves pause while any player is away.
+1. The seat is held for two minutes after disconnection is detected. Readiness is kept, so a refresh in the lobby costs nothing.
+2. New card/trump moves pause while any player is away. The others see who they are waiting for and a countdown.
 3. The returning browser authenticates, obtains a fresh snapshot, and reopens its socket.
 4. If an action acknowledgement was lost, the browser resends the same action ID.
 5. If a player does not return in time, an active deal ends without a winner; their seat is released and the remaining players can refill the table.
 
-A hard network loss may take a heartbeat interval to detect. There is no human turn timer while everyone remains connected in this initial friends-only version. Explicitly leaving an active deal ends it immediately for all players. The host role moves to another remaining player when the host's seat is released.
+A hard network loss may take a heartbeat interval to detect. There is no human turn timer while everyone remains connected in this initial friends-only version. Explicitly leaving an active deal ends it immediately for all players. The host role moves to another remaining player when the host's seat is released, and the lobby `notice` says who left. The dealer keeps rotating across abandoned deals. A finished deal's result stays visible to those who remain until a newcomer joins; newcomers always start in the lobby.
+
+Opening the room in a second tab moves the seat there (the old socket closes with code `4001`). The old tab stops reconnecting and offers **Play here instead**. Opening an invite link in a browser that already holds a seat goes straight back to it.
 
 Rooms expire after 24 hours without an accepted game/lobby action. This is short-lived room storage, not a permanent match history, account system, or leaderboard. Session cookies also have a 24-hour lifetime from issuance.
 
@@ -149,7 +151,7 @@ Wrangler prints the deployed HTTPS URL. If your login has access to multiple acc
 
 This creates/updates the `mendikot-multiplayer` Worker and its resources. The GitHub branch alone does not deploy the game. This repository's GitHub Actions workflow runs checks; it does not contain a Cloudflare deployment token or automatic deployment job.
 
-Before public promotion, review the account's usage and budget settings and run a real four-device playtest. Rate limiting is deliberately modest: guest creation is limited per IP to approximately 12/minute and join/socket attempts to 120/minute per Cloudflare location; users behind the same network share those counters. Each socket also permits at most 40 commands per 10 seconds, with a 2 KB message cap. These are basic abuse controls, not matchmaking, a global billing cap, or a solution to players sharing cards outside the application.
+Before public promotion, review the account's usage and budget settings and run a real four-device playtest. Rate limiting is deliberately modest: guest creation is limited per IP to approximately 12/minute and join/socket attempts to 120/minute per Cloudflare location; users behind the same network share those counters. Each socket also permits at most 40 messages per 10 seconds (valid or not; then it closes with `4008`), with a 2 KB message cap. A rejected command resyncs only its sender. These are basic abuse controls, not matchmaking, a global billing cap, or a solution to players sharing cards outside the application.
 
 ## Official references
 

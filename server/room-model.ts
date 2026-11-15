@@ -50,8 +50,8 @@ export interface RoomState {
   expiresAt: number;
   /** When the completed trick on the table should be collected. */
   collectAt: number | null;
-  /** Why the last deal ended without a winner, shown in the lobby. */
-  endedReason: string | null;
+  /** The latest table event for the lobby: who left, or why a deal ended early. */
+  notice: string | null;
   /** Dealer of the most recent deal, so rotation survives abandoned deals. */
   lastDealer?: Seat;
   /** Recent accepted command IDs per player ID. */
@@ -88,7 +88,7 @@ export function createRoom(
     setupRevision: 1,
     expiresAt: now + ROOM_TTL_MS,
     collectAt: null,
-    endedReason: null,
+    notice: null,
     receipts: {},
   };
 }
@@ -133,13 +133,20 @@ function discardFinishedDeal(draft: RoomState) {
   if (draft.game?.phase === "complete") draft.game = null;
 }
 
-/** Releases a seat on a draft. An unfinished deal ends without a winner. */
-function release(draft: RoomState, id: string, reason: string) {
+/** Releases a player's seat on a draft. An unfinished deal ends without a winner. */
+function release(draft: RoomState, player: Player, why: "left" | "timeout") {
+  const what =
+    why === "left"
+      ? `${player.name} left`
+      : `${player.name} did not reconnect within two minutes`;
   if (isDealActive(draft)) {
     draft.game = null;
     draft.collectAt = null;
-    draft.endedReason = reason;
+    draft.notice = `${what}. This deal has ended without a winner.`;
+  } else {
+    draft.notice = `${what} and gave up their seat.`;
   }
+  const id = player.id;
   draft.players = draft.players.map((p) => (p?.id === id ? null : p));
   delete draft.receipts[id];
   clearReadiness(draft);
@@ -158,7 +165,7 @@ export function joinRoom(room: RoomState, player: Player): RoomState {
   draft.hostId ||= player.id;
   // The newcomer was not part of whatever happened before.
   discardFinishedDeal(draft);
-  draft.endedReason = null;
+  draft.notice = null;
   return commit(draft, true);
 }
 
@@ -207,11 +214,7 @@ export function advanceTimers(room: RoomState, now: number): RoomState {
     setupChanged = false;
   for (const p of room.players) {
     if (p?.disconnectedAt != null && p.disconnectedAt + RECONNECT_MS <= now) {
-      release(
-        draft,
-        p.id,
-        `${p.name} did not reconnect within two minutes. This deal has ended without a winner.`,
-      );
+      release(draft, p, "timeout");
       changed = setupChanged = true;
     }
   }
@@ -259,7 +262,7 @@ export function roomView(
         : [],
     ),
     game: room.game ? playerGame(room.game, seat as Seat) : null,
-    endedReason: room.endedReason,
+    notice: room.notice ?? null,
     reconnectDeadline: Number.isFinite(deadline) ? deadline : null,
   };
 }
@@ -375,7 +378,7 @@ export function applyCommand(
         draft.mode,
       );
       draft.lastDealer = draft.game.dealer;
-      draft.endedReason = null;
+      draft.notice = null;
       draft.collectAt = null;
       clearReadiness(draft);
       setupChanged = true;
@@ -393,11 +396,7 @@ export function applyCommand(
         draft.game.phase === "trick-complete" ? now + TRICK_COLLECT_MS : null;
       break;
     case "leave":
-      release(
-        draft,
-        id,
-        `${player.name} left. This deal has ended without a winner.`,
-      );
+      release(draft, player, "left");
       setupChanged = true;
       break;
   }

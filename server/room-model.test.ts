@@ -64,7 +64,7 @@ describe("authoritative multiplayer rooms", () => {
     );
     expect(next.players[1]).toBeNull();
     expect(next.game).toBeNull();
-    expect(next.endedReason).toMatch(/left/);
+    expect(next.notice).toMatch(/left/);
   });
   it("accepts readiness from four players viewing the same lobby revision", () => {
     const initial = fixture();
@@ -270,7 +270,7 @@ describe("authoritative multiplayer rooms", () => {
     );
     expect(next.game).toBeNull();
     expect(next.hostId).toBe("player-1");
-    expect(next.endedReason).toMatch(/Friend 0 left/);
+    expect(next.notice).toMatch(/Friend 0 left/);
     expect(next.players.every((p) => !p?.ready)).toBe(true);
   });
   it("holds a disconnected seat for the reconnection window, then releases it", () => {
@@ -287,7 +287,7 @@ describe("authoritative multiplayer rooms", () => {
     const released = advanceTimers(away, 1_000 + RECONNECT_MS);
     expect(released.players[2]).toBeNull();
     expect(released.game).toBeNull();
-    expect(released.endedReason).toMatch(/did not reconnect/);
+    expect(released.notice).toMatch(/did not reconnect/);
     expect(released.setupRevision).toBe(released.revision);
   });
   it("starts every unconnected player's countdown after a restart", () => {
@@ -358,7 +358,7 @@ describe("authoritative multiplayer rooms", () => {
     );
     // Those who stay can keep looking at the result.
     expect(left.game!.phase).toBe("complete");
-    left.endedReason = "Friend 3 left. This deal has ended without a winner.";
+    expect(left.notice).toBe("Friend 3 left and gave up their seat.");
     const joined = joinRoom(left, {
       id: "player-new",
       name: "New",
@@ -367,7 +367,7 @@ describe("authoritative multiplayer rooms", () => {
       disconnectedAt: 0,
     });
     expect(joined.game).toBeNull();
-    expect(joined.endedReason).toBeNull();
+    expect(joined.notice).toBeNull();
   });
   it("keeps rotating the dealer after an abandoned deal", () => {
     const { room, connected } = fixture();

@@ -289,9 +289,9 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                   {error}
                 </p>
               )}
-              {room?.endedReason && !replaced && (
+              {room?.notice && !replaced && (
                 <p className="room-alert" role="status">
-                  {room.endedReason}
+                  {room.notice}
                 </p>
               )}
               {replaced ? (

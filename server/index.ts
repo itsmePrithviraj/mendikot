@@ -94,11 +94,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     return tooMany(
       "Too many connection attempts. Wait a minute and try again.",
     );
-  // A room only ever sees a buffered POST body or no body at all.
+  // A room only ever sees a buffered POST body, a WebSocket upgrade, or no body.
   return env.ROOMS.getByName(code).fetch(
     request.method === "POST"
       ? await buffered(request)
-      : endpoint === "socket"
+      : endpoint === "socket" && upgrade
         ? request
         : new Request(request.url, { headers: request.headers }),
   );
