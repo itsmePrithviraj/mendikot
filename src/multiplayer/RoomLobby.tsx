@@ -219,11 +219,10 @@ export function RoomLobby({
                         )}
                       </span>
                       <div className="lobby-person">
-                        <strong>
-                          {player.name}
-                          {player.id === mine.id ? " (you)" : ""}
-                        </strong>
+                        <strong>{player.name}</strong>
                         <span>
+                          {/* "You" sits here, where a long name cannot hide it. */}
+                          {player.id === mine.id ? "You · " : ""}
                           {player.bot
                             ? "Bot"
                             : !player.connected
