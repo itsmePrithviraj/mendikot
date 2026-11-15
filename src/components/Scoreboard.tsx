@@ -19,19 +19,24 @@ function TeamScore({ game, team }: { game: PlayerGame; team: Team }) {
           <small aria-hidden="true"> {tricks === 1 ? "trick" : "tricks"}</small>
         </span>
       </span>
-      <span
-        className="ten-slots"
-        role="img"
-        aria-label={`${won.length} tens captured`}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={`ten-slot${won[i] ? ` filled ${won[i].suit}` : ""}`}
-          >
-            {won[i] && <SuitGlyph suit={won[i].suit} />}
-          </span>
-        ))}
+      <span className="ten-row">
+        <span className="ten-label" aria-hidden="true">
+          10s
+        </span>
+        <span
+          className="ten-slots"
+          role="img"
+          aria-label={`${won.length} tens captured`}
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className={`ten-slot${won[i] ? ` filled ${won[i].suit}` : ""}`}
+            >
+              {won[i] && <SuitGlyph suit={won[i].suit} />}
+            </span>
+          ))}
+        </span>
       </span>
     </div>
   );

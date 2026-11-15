@@ -10,7 +10,7 @@ export function RulesSheet() {
           <strong>Follow suit</strong> if you can. Otherwise play any card.
         </li>
         <li>
-          <strong>Hukum beats every suit.</strong> Without hukum, the highest
+          <strong>Highest hukum wins.</strong> If none is played, the highest
           card of the suit led wins. A K Q J 10 … 2.
         </li>
         <li>

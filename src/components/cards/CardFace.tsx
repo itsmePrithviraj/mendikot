@@ -104,7 +104,7 @@ function Pips({ card }: { card: Card }) {
 }
 
 function CompactCentre({ card }: { card: Card }) {
-  if (card.rank > 10)
+  if (card.rank > 10 && card.rank < 14)
     return (
       <use
         href={`#crest-${crest(card.rank)}`}

@@ -268,6 +268,10 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
             onInstall={() => void installApp()}
             onNewDeal={() => setSheet("new")}
             onRules={() => setSheet("rules")}
+            onOnline={() => {
+              setSheet(null);
+              onOnline();
+            }}
             onVolumePreview={() => sound("place")}
           />
         )}

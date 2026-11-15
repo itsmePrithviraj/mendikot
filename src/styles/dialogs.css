@@ -125,8 +125,8 @@
   display: flex;
   align-items: center;
   gap: var(--s3);
-  min-height: 52px;
-  padding: 4px var(--s4);
+  min-height: 48px;
+  padding: 2px var(--s4);
   width: 100%;
   text-align: left;
   font-size: var(--fs-md);

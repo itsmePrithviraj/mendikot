@@ -73,6 +73,7 @@ export function MenuSheet({
   onNewDeal,
   onRules,
   onVolumePreview,
+  onOnline,
   online = false,
 }: {
   online?: boolean;
@@ -86,6 +87,8 @@ export function MenuSheet({
   onInstall: () => void;
   onNewDeal: () => void;
   onRules: () => void;
+  /** Practice only: leave the saved deal for a private room. */
+  onOnline?: () => void;
   onVolumePreview: () => void;
 }) {
   const s = 20;
@@ -169,6 +172,13 @@ export function MenuSheet({
           onClick={onNewDeal}
           disabled={!hasGame}
         />
+        {onOnline && hasGame && (
+          <Action
+            icon={<Users size={s} strokeWidth={1.75} />}
+            label="Play with friends"
+            onClick={onOnline}
+          />
+        )}
         <Action
           icon={<CircleHelp size={s} strokeWidth={1.75} />}
           label="How to play"

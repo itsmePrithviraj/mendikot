@@ -146,6 +146,8 @@ const VIEWS = [
   { width: 390, height: 844 },
   { width: 360, height: 780 },
   { width: 320, height: 740 },
+  { width: 320, height: 640 },
+  { width: 430, height: 932 },
   { width: 844, height: 390 },
   { width: 932, height: 430 },
   { width: 667, height: 375 },

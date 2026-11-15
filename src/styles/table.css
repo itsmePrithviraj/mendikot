@@ -71,6 +71,16 @@
 .team-tricks small {
   font-size: inherit;
 }
+.ten-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ten-label {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--on-felt-2);
+}
 .ten-slots {
   display: flex;
   gap: 4px;
@@ -657,6 +667,18 @@
 /* ---------- Portrait ---------- */
 /* Side seats drop "Opponent" in portrait but always keep "Bot" / "Away". */
 @media (orientation: portrait) {
+  /* The trick and side seats sit just above the hand; spare height opens
+     between them and the partner instead of between the trick and the hand. */
+  .felt {
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 340px);
+    grid-template-areas:
+      "nw north ne"
+      ". . ."
+      "west centre east";
+  }
+  .felt.has-panel .centre {
+    grid-row: 2 / -1;
+  }
   .seat-1 .seat-role,
   .seat-3 .seat-role {
     display: none;
@@ -679,11 +701,11 @@
     gap: var(--s2);
     padding-inline: var(--s3);
   }
-  .team-tricks small {
-    display: none;
-  }
   .ten-slots {
     gap: 3px;
+  }
+  .ten-row {
+    gap: 4px;
   }
   .ten-slot {
     width: 12px;
