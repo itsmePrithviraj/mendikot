@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Check, Copy, Share2, Users } from "lucide-react";
+import { Check, Copy, LogOut, Share2, Users } from "lucide-react";
 import type { Mode, Seat } from "../game/engine";
 import { ModePicker } from "../components/panels/ModePicker";
 import type { RoomAction, RoomSnapshot } from "./protocol";
 import { invitedRoom } from "./useRoom";
 
+/** Create-or-join form shown before the player has a seat. */
 export function RoomEntry({
   busy,
   onEnter,
@@ -101,6 +102,7 @@ export function RoomEntry({
   );
 }
 
+/** The waiting room between deals: invitations, seats, mode and readiness. */
 export function RoomLobby({
   room,
   disabled,
@@ -274,5 +276,57 @@ export function RoomLobby({
         </button>
       </div>
     </section>
+  );
+}
+
+/** The "Room & players" sheet available from the menu during a deal. */
+export function RoomDetails({
+  room,
+  error,
+  replaced,
+  disabled,
+  onLeave,
+  onBack,
+}: {
+  room: RoomSnapshot;
+  error: string;
+  /** This tab lost the seat to another tab. */
+  replaced: boolean;
+  disabled: boolean;
+  onLeave: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <>
+      <p>
+        Room <strong>{room.code}</strong> ·{" "}
+        {room.mode === "cut" ? "Cut hukum" : "Choose hukum"}
+      </p>
+      <ul className="room-player-list">
+        {room.players.map((p) => (
+          <li key={p.id}>
+            <strong>{p.name}</strong>
+            <span>
+              Team {(p.seat % 2) + 1} ·{" "}
+              {p.connected ? "Connected" : "Reconnecting"}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="small-print">
+        A disconnected seat is held for two minutes. Play pauses until everyone
+        returns. Leaving during a deal ends it for everyone.
+      </p>
+      {error && <p role="alert">{error}</p>}
+      {replaced ? (
+        <button className="btn btn-quiet" onClick={onBack}>
+          Back to practice
+        </button>
+      ) : (
+        <button className="btn btn-quiet" disabled={disabled} onClick={onLeave}>
+          <LogOut size={18} /> Leave room
+        </button>
+      )}
+    </>
   );
 }

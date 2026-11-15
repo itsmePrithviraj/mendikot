@@ -2,17 +2,17 @@
 
 ## Milestone 1 — playable PWA prototype
 
-- [ ] Repository, lockfile, build/test CI, product and design documentation
-- [ ] Pure rules engine: 52-card shuffle, legal play, cut hukum, trick winner, tens, ties
-- [ ] One human + three bots; complete deals, results and rematches
-- [ ] Portrait two-row hand, landscape single row, large-screen table
-- [ ] Ivory card faces with 10 + suit + sheep; patterned backs
-- [ ] Shuffle, distribution, selection, play and collection animations; reduced motion
-- [ ] Local save/restore, accessible controls, rules and settings
-- [ ] Installable PWA, offline practice, deferred app updates
-- [ ] Automated game tests, responsive browser checks, refresh/rotation/offline checks
+- [x] Repository, lockfile, build/test CI, product and design documentation
+- [x] Pure rules engine: 52-card shuffle, legal play, cut hukum, trick winner, tens, ties
+- [x] One human + three bots; complete deals, results and rematches
+- [x] Portrait two-row hand, landscape single row, large-screen table
+- [x] Ivory card faces with 10 + suit + sheep; patterned backs
+- [x] Shuffle, distribution, selection, play and collection animations; reduced motion
+- [x] Local save/restore, accessible controls, rules and settings
+- [x] Installable PWA, offline practice, deferred app updates
+- [x] Automated game tests, responsive browser checks, refresh/rotation/offline checks
 
-UI revamp (branch `ui-revamp`): new token system and three layout modes, redrawn SVG card faces/back/courts, sheep medallion on 10s, bottom-sheet menu and rules, haptics preference, regenerated icons, and an e2e geometry matrix over nine viewports.
+The UI revamp (PR #5) added the token system and three layout modes, redrawn SVG card faces, backs and courts, the sheep medallion on 10s, bottom-sheet menu and rules, a haptics preference, regenerated icons, and an e2e geometry matrix over nine viewports.
 
 ## Milestone 2 — play with friends
 

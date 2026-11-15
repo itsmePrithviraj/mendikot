@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { LogOut } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { CardDefs } from "../components/cards";
 import { TopBar } from "../components/TopBar";
@@ -25,15 +24,62 @@ import type { PlayerGame } from "../game/view";
 import { readPrefs, writePrefs } from "../state/prefs";
 import { TableIdentity } from "../state/tableIdentity";
 import { statusOf } from "../state/status";
-import { RoomEntry, RoomLobby } from "./RoomLobby";
+import type { Status } from "../state/status";
+import type { RoomSnapshot } from "./protocol";
+import { RoomDetails, RoomEntry, RoomLobby } from "./RoomLobby";
 import { useRoom } from "./useRoom";
+import type { Connection } from "./useRoom";
 
+type SheetKind = "rules" | "menu" | "last" | "room" | "install";
+
+const SHEET_TITLES: Record<SheetKind, string> = {
+  rules: "Bring the tens home.",
+  menu: "Make yourself comfortable.",
+  last: "Last trick",
+  room: "Around the table",
+  install: "A seat on your home screen.",
+};
+
+/** Names and presence by seat relative to the viewer: 0 is you, 2 your partner. */
+function identityOf(room: RoomSnapshot | null) {
+  const names: string[] = [];
+  const connected: boolean[] = [];
+  for (let relative = 0; relative < 4; relative++) {
+    const player = room?.players.find(
+      (p) => p.seat === (room.yourSeat + relative) % 4,
+    );
+    names.push(relative === 0 ? "You" : (player?.name ?? "Empty seat"));
+    connected.push(!!player?.connected);
+  }
+  return { names, connected, online: true };
+}
+
+/** Connection problems, pending actions and errors take over the status line. */
+function onlineStatus(
+  base: Status,
+  connection: Connection,
+  everyoneHere: boolean,
+  pending: boolean,
+  error: string,
+): Status {
+  const text =
+    connection === "replaced"
+      ? "Your seat is open in another tab."
+      : connection !== "connected"
+        ? "Reconnecting… Your seat is reserved."
+        : !everyoneHere
+          ? "Waiting for a friend to reconnect · up to 2 minutes"
+          : pending
+            ? "Confirming your action…"
+            : error;
+  return text ? { text, mine: false } : base;
+}
+
+/** The online table: lobby, live game and results for one private room. */
 export function OnlineApp({ onBack }: { onBack: () => void }) {
   const client = useRoom();
   const { room, code, connection, pending, busy, error, send } = client;
-  const [sheet, setSheet] = useState<
-    "rules" | "menu" | "last" | "room" | "install" | null
-  >(null);
+  const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [prefs, setPrefs] = useState(readPrefs);
   const [selected, setSelected] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(true);
@@ -65,19 +111,10 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
     everyoneHere &&
     !dealing;
   const canPlay = myTurn && !!selected && legal.has(selected);
-  const names = [0, 1, 2, 3].map(
-    (relative) =>
-      room?.players.find((p) => p.seat === (room.yourSeat + relative) % 4)
-        ?.name ?? "Empty seat",
-  );
-  names[0] = "You";
-  const connected = [0, 1, 2, 3].map(
-    (relative) =>
-      !!room?.players.find((p) => p.seat === (room.yourSeat + relative) % 4)
-        ?.connected,
-  );
+  const identity = identityOf(room);
 
   useEffect(() => writePrefs(prefs), [prefs]);
+  // React to each new snapshot: sounds, the deal animation and a stale selection.
   useEffect(() => {
     if (!game) {
       previous.current = null;
@@ -128,30 +165,16 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
     setSelected(null);
     tap(12);
   }
-  const status = statusOf(game, dealing ? "deal" : "ready", names);
-  if (connection !== "connected") {
-    status.text =
-      connection === "replaced"
-        ? "Your seat is open in another tab."
-        : "Reconnecting… Your seat is reserved.";
-    status.mine = false;
-    delete status.suit;
-  } else if (!everyoneHere) {
-    status.text = "Waiting for a friend to reconnect · up to 2 minutes";
-    status.mine = false;
-    delete status.suit;
-  } else if (pending) {
-    status.text = "Confirming your action…";
-    status.mine = false;
-    delete status.suit;
-  } else if (error) {
-    status.text = error;
-    status.mine = false;
-    delete status.suit;
-  }
+  const status = onlineStatus(
+    statusOf(game, dealing ? "deal" : "ready", identity.names),
+    connection,
+    everyoneHere,
+    pending,
+    error,
+  );
 
   return (
-    <TableIdentity.Provider value={{ names, online: true, connected }}>
+    <TableIdentity.Provider value={identity}>
       <div
         className={`app online-app${reduced ? " reduce-motion" : ""}`}
         data-screen={showTable ? "game" : "room"}
@@ -297,17 +320,7 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
         />
         <Sheet
           open={!!sheet}
-          title={
-            sheet === "rules"
-              ? "Bring the tens home."
-              : sheet === "last"
-                ? "Last trick"
-                : sheet === "room"
-                  ? "Around the table"
-                  : sheet === "install"
-                    ? "A seat on your home screen."
-                    : "Make yourself comfortable."
-          }
+          title={sheet ? SHEET_TITLES[sheet] : ""}
           onClose={() => setSheet(null)}
         >
           {sheet === "rules" && <RulesSheet />}
@@ -332,41 +345,14 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
             />
           )}
           {sheet === "room" && room && (
-            <>
-              <p>
-                Room <strong>{room.code}</strong> ·{" "}
-                {room.mode === "cut" ? "Cut hukum" : "Choose hukum"}
-              </p>
-              <ul className="room-player-list">
-                {room.players.map((p) => (
-                  <li key={p.id}>
-                    <strong>{p.name}</strong>
-                    <span>
-                      Team {(p.seat % 2) + 1} ·{" "}
-                      {p.connected ? "Connected" : "Reconnecting"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="small-print">
-                A disconnected seat is held for two minutes. Play pauses until
-                everyone returns. Leaving during a deal ends it for everyone.
-              </p>
-              {error && <p role="alert">{error}</p>}
-              {connection === "replaced" ? (
-                <button className="btn btn-quiet" onClick={back}>
-                  Back to practice
-                </button>
-              ) : (
-                <button
-                  className="btn btn-quiet"
-                  disabled={disabled}
-                  onClick={leave}
-                >
-                  <LogOut size={18} /> Leave room
-                </button>
-              )}
-            </>
+            <RoomDetails
+              room={room}
+              error={error}
+              replaced={connection === "replaced"}
+              disabled={disabled}
+              onLeave={leave}
+              onBack={back}
+            />
           )}
         </Sheet>
       </div>

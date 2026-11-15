@@ -1,165 +1,135 @@
+/**
+ * One Durable Object per room. It owns the authoritative state, persists every
+ * accepted change before acknowledging it, and pushes each connected player
+ * their own private snapshot. Rules live in `room-model.ts`.
+ */
 import { DurableObject } from "cloudflare:workers";
-import { collectTrick } from "../src/game/engine";
-import { RECONNECT_MS } from "../src/multiplayer/protocol";
+import { CloseCode } from "../src/multiplayer/protocol";
 import type { ServerMessage } from "../src/multiplayer/protocol";
+import { json, MAX_MESSAGE_BYTES, readJsonObject } from "./http";
 import {
+  advanceTimers,
   applyCommand,
   createRoom,
+  isExpired,
+  joinRoom,
+  nextDeadline,
   parseCommand,
   playerName,
-  removePlayer,
+  reconcilePresence,
   roomView,
+  RoomError,
+  setConnected,
 } from "./room-model";
 import type { Player, RoomState } from "./room-model";
+import { hashToken, newToken, sessionCookie, sessionToken } from "./session";
 
-const response = (data: unknown, status = 200, headers: HeadersInit = {}) =>
-  Response.json(data, {
-    status,
-    headers: { "Cache-Control": "no-store", ...headers },
-  });
-const hash = async (token: string) =>
-  Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)),
-    ),
-    (b) => b.toString(16).padStart(2, "0"),
-  ).join("");
-const secret = () =>
-  Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
-    b.toString(16).padStart(2, "0"),
-  ).join("");
+/** Per-socket command budget: at most COMMAND_LIMIT messages per window. */
+const COMMAND_LIMIT = 40;
+const COMMAND_WINDOW_MS = 10_000;
+
+/** Stored on each hibernatable socket so it survives the object sleeping. */
 interface Attachment {
-  id: string;
-  window: number;
+  playerId: string;
+  windowStart: number;
   count: number;
 }
+const attachmentOf = (socket: WebSocket) =>
+  socket.deserializeAttachment() as Attachment;
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 export class GameRoom extends DurableObject<Env> {
+  /** In-memory copy of the stored room; storage is always written first. */
   private room: RoomState | null = null;
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    // Heartbeats are answered without waking the object.
     ctx.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair("ping", "pong"),
     );
     ctx.blockConcurrencyWhile(async () => {
-      this.room = (await ctx.storage.get<RoomState>("room")) ?? null;
-      if (this.room) {
-        const live = this.connected();
-        let changed = false;
-        for (const player of this.room.players) {
-          if (
-            player &&
-            !live.has(player.id) &&
-            player.disconnectedAt === null
-          ) {
-            player.disconnectedAt = Date.now();
-            changed = true;
-          }
-        }
-        if (changed) {
-          this.room.revision++;
-          await this.persist(this.room);
-        }
-      }
+      const stored = (await ctx.storage.get<RoomState>("room")) ?? null;
+      if (!stored) return;
+      this.room = stored;
+      const next = reconcilePresence(stored, this.connected(), Date.now());
+      if (next !== stored) await this.persist(next);
     });
   }
 
-  // Serialize async handlers as well as synchronous engine moves.
+  /**
+   * Runs handlers one at a time. Durable Objects interleave async handlers at
+   * every await, so without this two moves could read the same room.
+   */
   private exclusive<T>(work: () => Promise<T>): Promise<T> {
     const next = this.queue.then(work);
     this.queue = next.catch(() => {});
     return next;
   }
+
   private connected() {
     return new Set(
       this.ctx
         .getWebSockets()
         .filter((s) => s.readyState === WebSocket.OPEN)
-        .map((s) => (s.deserializeAttachment() as Attachment).id),
+        .map((s) => attachmentOf(s).playerId),
     );
   }
+
+  /** Saves the room and its next alarm atomically, then adopts it in memory. */
   private async persist(room: RoomState) {
-    const deadlines = [
-      room.expiresAt,
-      ...(room.collectAt ? [room.collectAt] : []),
-      ...room.players.flatMap((p) =>
-        p?.disconnectedAt != null ? [p.disconnectedAt + RECONNECT_MS] : [],
-      ),
-    ];
     await this.ctx.storage.transaction(async (txn) => {
       await txn.put("room", room);
-      await txn.setAlarm(Math.max(Date.now() + 1, Math.min(...deadlines)));
+      await txn.setAlarm(Math.max(Date.now() + 1, nextDeadline(room)));
     });
     this.room = room;
   }
+
   private send(socket: WebSocket, message: ServerMessage) {
     try {
       socket.send(JSON.stringify(message));
     } catch {
-      /* Close handler updates presence. */
+      /* The close handler updates presence. */
     }
   }
+
   private broadcast() {
     if (!this.room) return;
+    const room = this.room;
     const connected = this.connected();
     for (const socket of this.ctx.getWebSockets()) {
-      const { id } = socket.deserializeAttachment() as Attachment;
-      if (this.room.players.some((p) => p?.id === id))
+      const { playerId } = attachmentOf(socket);
+      if (room.players.some((p) => p?.id === playerId))
         this.send(socket, {
           type: "snapshot",
-          room: roomView(this.room, id, connected),
+          room: roomView(room, playerId, connected),
         });
     }
   }
-  private cookieName(code: string) {
-    return `mendikot_${code}`;
-  }
-  private cookie(code: string, token: string, url: URL) {
-    return `${this.cookieName(code)}=${token}; Path=/api/rooms/${code}; HttpOnly; SameSite=Strict; Max-Age=86400${url.protocol === "https:" ? "; Secure" : ""}`;
-  }
+
   private async authenticate(request: Request): Promise<Player | null> {
     if (!this.room) return null;
-    const name = this.cookieName(this.room.code) + "=";
-    const token = request.headers
-      .get("Cookie")
-      ?.split(";")
-      .map((s) => s.trim())
-      .find((s) => s.startsWith(name))
-      ?.slice(name.length);
-    if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-    const tokenHash = await hash(token);
+    const token = sessionToken(request, this.room.code);
+    if (!token) return null;
+    const tokenHash = await hashToken(token);
     return this.room.players.find((p) => p?.tokenHash === tokenHash) ?? null;
   }
-  private async body(request: Request): Promise<Record<string, unknown>> {
-    if (!request.headers.get("Content-Type")?.startsWith("application/json"))
-      throw new Error("Expected JSON.");
-    // Read with a hard cap rather than trusting Content-Length.
-    const reader = request.body?.getReader();
-    if (!reader) throw new Error("Missing request body.");
-    const chunks: Uint8Array[] = [];
-    let length = 0;
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      length += value.byteLength;
-      if (length > 2048) {
-        await reader.cancel();
-        throw new Error("Request is too large.");
-      }
-      chunks.push(value);
-    }
-    const bytes = new Uint8Array(length);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-    const body: unknown = JSON.parse(new TextDecoder().decode(bytes));
-    if (!body || typeof body !== "object" || Array.isArray(body))
-      throw new Error("Invalid request.");
-    return body as Record<string, unknown>;
+
+  /** A new player record plus the cookie that proves the player owns it. */
+  private async newPlayer(name: unknown, code: string, url: URL) {
+    const token = newToken();
+    const player: Player = {
+      id: crypto.randomUUID(),
+      name: playerName(name),
+      tokenHash: await hashToken(token),
+      ready: false,
+      // Counts as away until the first socket opens.
+      disconnectedAt: Date.now(),
+    };
+    return { player, cookie: sessionCookie(code, token, url) };
   }
 
   fetch(request: Request) {
@@ -167,14 +137,9 @@ export class GameRoom extends DurableObject<Env> {
       try {
         return await this.handle(request);
       } catch (error) {
-        return response(
-          {
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unable to open this room.",
-          },
-          400,
+        return json(
+          { error: errorMessage(error, "Unable to open this room.") },
+          error instanceof RoomError ? error.status : 400,
         );
       }
     });
@@ -182,114 +147,108 @@ export class GameRoom extends DurableObject<Env> {
 
   private async handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "POST" && url.pathname === "/api/rooms") {
-      if (this.room)
-        return response({ error: "Please try creating the room again." }, 409);
-      const body = await this.body(request);
-      const name = playerName(body.name);
-      if (body.mode !== "cut" && body.mode !== "choose")
-        throw new Error("Choose a hukum mode.");
-      const code = request.headers.get("X-Room-Code")!;
-      const token = secret();
-      const player: Player = {
-        id: crypto.randomUUID(),
-        name,
-        tokenHash: await hash(token),
-        ready: false,
-        disconnectedAt: Date.now(),
-      };
-      await this.persist(createRoom(code, body.mode, player, Date.now()));
-      return response({ code }, 201, {
-        "Set-Cookie": this.cookie(code, token, url),
-      });
-    }
-    if (!this.room || this.room.expiresAt <= Date.now())
-      return response(
-        { error: "This room has expired or does not exist." },
-        404,
-      );
+    if (request.method === "POST" && url.pathname === "/api/rooms")
+      return this.create(request, url);
+    if (!this.room || isExpired(this.room, Date.now()))
+      return json({ error: "This room has expired or does not exist." }, 404);
+    const room = this.room;
     const existing = await this.authenticate(request);
+
     if (request.method === "POST" && url.pathname.endsWith("/join")) {
-      if (existing) return response({ code: this.room.code });
-      if (this.room.game && this.room.game.phase !== "complete")
-        return response({ error: "This deal has already started." }, 409);
-      const seat = this.room.players.findIndex((p) => !p);
-      if (seat < 0)
-        return response({ error: "This room already has four players." }, 409);
-      const body = await this.body(request);
-      const token = secret();
-      const next = structuredClone(this.room);
-      next.players[seat] = {
-        id: crypto.randomUUID(),
-        name: playerName(body.name),
-        tokenHash: await hash(token),
-        ready: false,
-        disconnectedAt: Date.now(),
-      };
-      if (!next.hostId) next.hostId = next.players[seat]!.id;
-      next.revision++;
-      next.setupRevision = next.revision;
-      await this.persist(next);
+      // Joining again from the same browser simply recovers the seat.
+      if (existing) return json({ code: room.code });
+      const body = await readJsonObject(request);
+      const { player, cookie } = await this.newPlayer(
+        body.name,
+        room.code,
+        url,
+      );
+      await this.persist(joinRoom(room, player));
       this.broadcast();
-      return response({ code: next.code }, 200, {
-        "Set-Cookie": this.cookie(next.code, token, url),
-      });
+      return json({ code: room.code }, 200, { "Set-Cookie": cookie });
     }
     if (!existing)
-      return response({ error: "Join this room to take a seat." }, 401);
-    if (request.method === "GET" && url.pathname.endsWith("/socket")) {
-      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
-        return response({ error: "WebSocket required." }, 426);
-      const pair = new WebSocketPair();
-      const client = pair[0],
-        server = pair[1];
-      for (const old of this.ctx.getWebSockets(existing.id))
-        old.close(4001, "Your seat is open in another tab.");
-      this.ctx.acceptWebSocket(server, [existing.id]);
-      server.serializeAttachment({
-        id: existing.id,
-        window: Date.now(),
-        count: 0,
-      } satisfies Attachment);
-      const next = structuredClone(this.room);
-      next.players.find((p) => p?.id === existing.id)!.disconnectedAt = null;
-      next.revision++;
-      await this.persist(next);
-      this.broadcast();
-      return new Response(null, { status: 101, webSocket: client });
+      return json({ error: "Join this room to take a seat." }, 401);
+    if (request.method !== "GET")
+      return json({ error: "Method not allowed." }, 405);
+    if (url.pathname.endsWith("/socket"))
+      return this.openSocket(request, existing);
+    return json(roomView(room, existing.id, this.connected()));
+  }
+
+  private async create(request: Request, url: URL) {
+    // The Worker picked a random code; a collision means try again.
+    if (this.room)
+      return json({ error: "Please try creating the room again." }, 409);
+    const body = await readJsonObject(request);
+    if (body.mode !== "cut" && body.mode !== "choose")
+      throw new RoomError("Choose a hukum mode.");
+    const code = request.headers.get("X-Room-Code")!;
+    const { player, cookie } = await this.newPlayer(body.name, code, url);
+    await this.persist(createRoom(code, body.mode, player, Date.now()));
+    return json({ code }, 201, { "Set-Cookie": cookie });
+  }
+
+  private async openSocket(request: Request, player: Player) {
+    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
+      return json({ error: "WebSocket required." }, 426);
+    // One live socket per player: a new tab takes over the seat.
+    for (const old of this.ctx.getWebSockets(player.id))
+      old.close(CloseCode.replaced, "Your seat is open in another tab.");
+    const [client, server] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(server, [player.id]);
+    server.serializeAttachment({
+      playerId: player.id,
+      windowStart: Date.now(),
+      count: 0,
+    } satisfies Attachment);
+    await this.persist(setConnected(this.room!, player.id, true, Date.now()));
+    this.broadcast();
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** Counts a message against the socket's budget. False means close it. */
+  private withinBudget(socket: WebSocket, attachment: Attachment) {
+    const now = Date.now();
+    if (now - attachment.windowStart > COMMAND_WINDOW_MS) {
+      attachment.windowStart = now;
+      attachment.count = 0;
     }
-    if (request.method === "GET" && !url.pathname.endsWith("/socket"))
-      return response(roomView(this.room, existing.id, this.connected()));
-    return response({ error: "Method not allowed." }, 405);
+    attachment.count++;
+    socket.serializeAttachment(attachment);
+    return attachment.count <= COMMAND_LIMIT;
   }
 
   webSocketMessage(socket: WebSocket, message: string | ArrayBuffer) {
     return this.exclusive(async () => {
-      let id: string | undefined;
+      let commandId: string | undefined;
       try {
         if (socket.readyState !== WebSocket.OPEN) return;
-        if (!this.room || this.room.expiresAt <= Date.now()) {
-          socket.close(4004, "Room expired.");
+        if (!this.room || isExpired(this.room, Date.now())) {
+          socket.close(CloseCode.expired, "Room expired.");
           return;
         }
-        if (typeof message !== "string" || message.length > 2048)
-          throw new Error("Invalid message.");
-        const attachment = socket.deserializeAttachment() as Attachment;
-        if (Date.now() - attachment.window > 10_000) {
-          attachment.window = Date.now();
-          attachment.count = 0;
-        }
-        attachment.count++;
-        socket.serializeAttachment(attachment);
-        if (attachment.count > 40) {
-          socket.close(4008, "Too many actions. Reconnect in a moment.");
+        if (typeof message !== "string" || message.length > MAX_MESSAGE_BYTES)
+          throw new RoomError("Invalid message.");
+        const attachment = attachmentOf(socket);
+        if (!this.withinBudget(socket, attachment)) {
+          socket.close(
+            CloseCode.rateLimited,
+            "Too many actions. Reconnect in a moment.",
+          );
           return;
         }
-        const command = parseCommand(JSON.parse(message));
-        id = command.id;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message);
+        } catch {
+          throw new RoomError("Invalid action.");
+        }
+        const command = parseCommand(parsed);
+        commandId = command.id;
         const next = applyCommand(
           this.room,
-          attachment.id,
+          attachment.playerId,
           command,
           this.connected(),
           Date.now(),
@@ -304,12 +263,10 @@ export class GameRoom extends DurableObject<Env> {
       } catch (error) {
         this.send(socket, {
           type: "error",
-          id,
-          message:
-            error instanceof Error
-              ? error.message
-              : "Could not apply that action.",
+          id: commandId,
+          message: errorMessage(error, "Could not apply that action."),
         });
+        // Resync the sender in case its snapshot was stale.
         this.broadcast();
       }
     });
@@ -323,53 +280,36 @@ export class GameRoom extends DurableObject<Env> {
         /* Already closed. */
       }
       if (!this.room) return;
-      const { id } = socket.deserializeAttachment() as Attachment;
-      if (this.connected().has(id)) return; // A replacement tab owns the seat.
-      const next = structuredClone(this.room);
-      const player = next.players.find((p) => p?.id === id);
-      if (!player) return;
-      player.disconnectedAt = Date.now();
-      player.ready = false;
-      next.revision++;
+      const { playerId } = attachmentOf(socket);
+      if (this.connected().has(playerId)) return; // A replacement tab owns the seat.
+      const next = setConnected(this.room, playerId, false, Date.now());
+      if (next === this.room) return;
       await this.persist(next);
       this.broadcast();
     });
   }
+
   webSocketError(socket: WebSocket) {
     return this.webSocketClose(socket);
   }
 
+  /** Wakes for the earliest deadline: trick collection, a seat release or expiry. */
   alarm() {
     return this.exclusive(async () => {
       if (!this.room) return;
       const now = Date.now();
-      if (this.room.expiresAt <= now) {
+      if (isExpired(this.room, now)) {
         for (const socket of this.ctx.getWebSockets())
-          socket.close(4004, "Room expired.");
+          socket.close(CloseCode.expired, "Room expired.");
         await this.ctx.storage.deleteAll();
         this.room = null;
         return;
       }
-      const next = structuredClone(this.room);
-      for (const player of next.players) {
-        if (
-          player?.disconnectedAt != null &&
-          player.disconnectedAt + RECONNECT_MS <= now
-        )
-          removePlayer(
-            next,
-            player.id,
-            `${player.name} did not reconnect within two minutes. This deal has ended without a winner.`,
-          );
-      }
-      if (next.collectAt !== null && next.collectAt <= now) {
-        if (next.game?.phase === "trick-complete")
-          next.game = collectTrick(next.game);
-        next.collectAt = null;
-      }
-      next.revision++;
+      const next = advanceTimers(this.room, now);
+      const changed = next !== this.room;
+      // Persisting also schedules the next alarm, even when nothing was due.
       await this.persist(next);
-      this.broadcast();
+      if (changed) this.broadcast();
     });
   }
 }

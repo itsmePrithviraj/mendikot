@@ -1,6 +1,17 @@
 # Multiplayer: how the pieces work
 
-This branch adds four-human private tables using Cloudflare Workers, SQLite-backed Durable Objects, and native WebSockets. The React interface and existing Mendikot rules are shared with offline practice. No Socket.IO or Colyseus is involved.
+Private four-player tables run on Cloudflare Workers, SQLite-backed Durable Objects and plain WebSockets (no Socket.IO or Colyseus). They share the React interface and the rules engine with offline practice.
+
+| File                          | Role                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| `server/index.ts`             | Worker entry: static app, origin check, rate limits, routing |
+| `server/room.ts`              | `GameRoom` Durable Object: storage, sockets, alarms          |
+| `server/room-model.ts`        | Pure room logic, unit-tested without a runtime               |
+| `server/session.ts`           | Guest session tokens and cookies                             |
+| `server/http.ts`              | JSON responses and capped body reading                       |
+| `src/multiplayer/protocol.ts` | Message types and limits shared by client and server         |
+| `src/multiplayer/useRoom.ts`  | Browser connection: join, socket, reconnect, retries         |
+| `src/game/view.ts`            | The private per-player game view                             |
 
 ## Run it on your computer
 
@@ -32,7 +43,7 @@ The Worker uses a **binding** named `ROOMS` to reach Durable Objects. A binding 
 
 ## Stage 2: a Durable Object owns each room
 
-`server/room.ts` defines `GameRoom`. The Worker uses `env.ROOMS.getByName(code)` to find the object for that particular room code. Every player at that table reaches the same logical object.
+`server/room.ts` defines `GameRoom`; the decisions it makes live in `server/room-model.ts` as pure functions. The Worker uses `env.ROOMS.getByName(code)` to find the object for that particular room code. Every player at that table reaches the same logical object.
 
 The object stores the full authoritative state: player credentials, seats, readiness, game, revision, accepted-action IDs, and deadlines. Its storage is SQLite-backed; this implementation uses the typed key/value storage API on that SQLite storage. We do not need a separate database service for these room snapshots.
 
@@ -66,9 +77,13 @@ Mutating requests and WebSocket upgrades must carry the same origin as the game.
 }
 ```
 
-`server/room-model.ts` validates the command against the current room. Actual card legality, trump selection, and scoring come from `src/game/engine.ts`.
+`parseCommand` in `server/room-model.ts` checks the message shape; `applyCommand` checks it against the current room. Card legality, trump selection and scoring come from `src/game/engine.ts`.
 
-The object serializes asynchronous changes, saves the new state and receipt before acknowledging the action, then sends each player a separate snapshot. The last 64 accepted IDs per player are retained. A retry of an accepted action is acknowledged without applying it again. Game moves require the current revision, so older moves outside the receipt window are rejected. Readiness is an explicit per-player value: players may ready up concurrently from older snapshots of the same lobby setup. A roster, team, mode, or deal change invalidates that older readiness request. Leaving releases the authenticated player's own seat even when another update arrived in the meantime. Other stale actions ask the player to retry against the new table.
+The object runs one handler at a time, saves the new state and receipt before acknowledging the action, then sends each player a separate snapshot. The browser keeps at most one unacknowledged command.
+
+- **Retries apply once.** The last 64 accepted IDs per player are kept; a retry of one is acknowledged without being applied again.
+- **Moves need the current revision.** A card, trump, mode, seat or start command made from an older snapshot is rejected with "The table changed", and the browser receives a fresh snapshot.
+- **Two commands tolerate older snapshots,** because they cannot conflict with what changed. Readiness is accepted until the roster, teams, mode or deal change (`setupRevision`), so four friends can ready up at once. Leaving only releases the sender's own seat, so it is always accepted.
 
 `src/game/view.ts` builds that snapshot's game view. It includes only the viewer's hand, legal card IDs, the other hand counts, public trick/score information, and public turn/dealer information. Neither the other hands nor the undealt reserve leaves the backend. Seat positions and team scores are rotated so the viewer is always at the bottom, with their partner opposite and their team labeled **Us**.
 
@@ -78,7 +93,7 @@ The frontend never declares a move successful before the server accepts it. It d
 
 A **Durable Object alarm** is a persisted server-side wake-up time. It runs independently of whether a player's tab is visible. We use alarms to collect completed tricks after 1.7 seconds, release abandoned seats, and expire inactive rooms.
 
-The next required deadline is saved atomically with the room snapshot. A retried alarm checks the persisted game phase and deadline, avoiding a second collection of the same trick.
+The next required deadline (`nextDeadline`) is saved atomically with the room snapshot. When the alarm fires, `advanceTimers` applies only what is due; a retried alarm finds the trick already collected and does nothing.
 
 The WebSocket hibernation API keeps connections on Cloudflare's network while allowing idle object execution to stop. A `ping`/`pong` auto-response maintains client health checks without waking the object for each heartbeat. The object reconstructs state from storage and connection attachments when it wakes. In-memory variables alone are never the durable save.
 
@@ -96,7 +111,7 @@ Rooms expire after 24 hours without an accepted game/lobby action. This is short
 
 ## Stage 6: interface
 
-- `RoomLobby.tsx`: create/join forms, invitation sharing, team seats, readiness, and host start controls.
+- `RoomLobby.tsx`: create/join form, invitation sharing, team seats, readiness, host start controls, and the in-game room sheet.
 - `OnlineApp.tsx`: online table orchestration and connection state; it reuses the existing cards, table, score, sound, haptic, and settings components.
 - `App.tsx`: selects practice or multiplayer. Local practice saving and bots remain separate.
 - `TableIdentity`: supplies real player names and connection states instead of the practice bot names.
@@ -118,9 +133,9 @@ The online browser suite uses four isolated cookie jars against the real local W
 
 ## Deploy to your Cloudflare account
 
-The game is live at [Mendikot multiplayer](https://mendikot-multiplayer.prithvirajgokule0607.workers.dev), deployed on 4 November 2026 from runtime commit `5bf9b26` on `codex/multiplayer`. Cloudflare version: `329a574e-7443-4779-8156-ff9582c03582`. The Worker, static website, and SQLite-backed `GameRoom` Durable Object class are deployed together. Future deployments use the same command below and preserve room storage.
+The game is live at [Mendikot multiplayer](https://mendikot-multiplayer.prithvirajgokule0607.workers.dev). It was last deployed on 4 November 2026 from commit `5bf9b26` (Cloudflare version `329a574e-7443-4779-8156-ff9582c03582`); later commits reach the live site only after someone runs `npm run deploy` again. The Worker, static website and `GameRoom` Durable Object class deploy together, and redeploying keeps room storage.
 
-Deployment verification used four isolated browser sessions against the public HTTPS service. Complete cut and choose deals passed with private-hand checks, refresh recovery, and rematches. Live testing exposed readiness and leave-request races under network latency; both were corrected, covered by unit regressions, and the live authentication/duplicate-action/replacement-tab/leave test passed on the final version. Testing with four actual devices and people remains a separate playtest.
+That deployment was verified with four isolated browser sessions against the public HTTPS service: complete cut and choose deals, private-hand checks, refresh recovery and rematches. Live latency exposed readiness and leave-request races, which are now covered by unit tests. A playtest with four real devices and people is still to do.
 
 The first deployment needs the account owner's browser authorization:
 

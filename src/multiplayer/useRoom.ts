@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Mode } from "../game/engine";
-import { ROOM_CODE } from "./protocol";
+import { CloseCode, ROOM_CODE } from "./protocol";
 import type {
   Command,
   RoomAction,
@@ -8,7 +8,21 @@ import type {
   ServerMessage,
 } from "./protocol";
 
+/**
+ * Browser side of a room: joins over HTTP, then keeps one WebSocket open with
+ * reconnection, heartbeats and at most one unacknowledged command.
+ */
+
+/** Per-tab memory of the open room. The seat itself is proven by an HttpOnly cookie. */
 const STORAGE_KEY = "mendikot.room.v1";
+const REQUEST_TIMEOUT_MS = 15_000;
+const HEARTBEAT_MS = 10_000;
+/** No pong for this long means the connection is dead. */
+const PONG_TIMEOUT_MS = 35_000;
+/** An unacknowledged command for this long forces a reconnect and resend. */
+const ACK_TIMEOUT_MS = 10_000;
+const MAX_RETRY_MS = 10_000;
+
 export function rememberedRoom(): string | null {
   try {
     const code = sessionStorage.getItem(STORAGE_KEY);
@@ -17,9 +31,11 @@ export function rememberedRoom(): string | null {
     return null;
   }
 }
+/** The room code from an invite link (`?room=CODE`), or "". */
 export function invitedRoom(): string {
   return new URL(location.href).searchParams.get("room")?.toUpperCase() ?? "";
 }
+/** Remembers the room for this tab and mirrors it in the URL so reloads and shares work. */
 function remember(code: string | null) {
   try {
     if (code) sessionStorage.setItem(STORAGE_KEY, code);
@@ -33,7 +49,18 @@ function remember(code: string | null) {
   history.replaceState(null, "", url);
 }
 export type Connection =
-  "connecting" | "connected" | "reconnecting" | "replaced" | "idle";
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  /** Another tab took over this seat; this view stops reconnecting. */
+  | "replaced";
+
+const socketUrl = (code: string) => {
+  const url = new URL(`/api/rooms/${code}/socket`, location.href);
+  url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  return url;
+};
 
 export function useRoom() {
   const [code, setCode] = useState<string | null>(() => {
@@ -49,7 +76,9 @@ export function useRoom() {
   const socket = useRef<WebSocket | null>(null);
   const currentRoom = useRef(room);
   currentRoom.current = room;
+  /** The one command awaiting acknowledgement. */
   const inflight = useRef<Command | null>(null);
+  /** When `inflight` was last sent on the current socket; 0 if not yet resent. */
   const pendingSince = useRef(0);
   const busyRef = useRef(false);
 
@@ -64,6 +93,7 @@ export function useRoom() {
 
   useEffect(() => {
     if (!code) return;
+    const roomCode = code;
     let stopped = false,
       retry: ReturnType<typeof setTimeout> | undefined;
     let attempt = 0,
@@ -73,16 +103,19 @@ export function useRoom() {
     function schedule() {
       if (stopped) return;
       setConnection("reconnecting");
-      retry = setTimeout(connect, Math.min(1000 * 2 ** attempt++, 10_000));
+      retry = setTimeout(
+        connect,
+        Math.min(1000 * 2 ** attempt++, MAX_RETRY_MS),
+      );
     }
     async function connect() {
       if (stopped) return;
       try {
-        const res = await fetch(`/api/rooms/${code}`, {
+        const res = await fetch(`/api/rooms/${roomCode}`, {
           cache: "no-store",
           signal: AbortSignal.any([
             controller.signal,
-            AbortSignal.timeout(15_000),
+            AbortSignal.timeout(REQUEST_TIMEOUT_MS),
           ]),
         });
         if (stopped) return;
@@ -96,9 +129,7 @@ export function useRoom() {
         const snapshot = (await res.json()) as RoomSnapshot;
         if (stopped) return;
         setRoom(snapshot);
-        const url = new URL(`/api/rooms/${code}/socket`, location.href);
-        url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
-        active = new WebSocket(url);
+        active = new WebSocket(socketUrl(roomCode));
         socket.current = active;
         const ws = active;
         ws.onopen = () => {
@@ -145,14 +176,14 @@ export function useRoom() {
           if (stopped || socket.current !== ws) return;
           socket.current = null;
           pendingSince.current = 0;
-          if (event.code === 4001) {
+          if (event.code === CloseCode.replaced) {
             setConnection("replaced");
             setError(
               "Your seat is open in another tab. Close this view or return there.",
             );
             inflight.current = null;
             setPending(false);
-          } else if (event.code === 4004) {
+          } else if (event.code === CloseCode.expired) {
             setError("This room has expired. Create a new room to play again.");
             forget();
           } else schedule();
@@ -167,14 +198,15 @@ export function useRoom() {
     const heartbeat = setInterval(() => {
       if (!active || active.readyState !== WebSocket.OPEN) return;
       if (
-        Date.now() - lastPong > 35_000 ||
+        Date.now() - lastPong > PONG_TIMEOUT_MS ||
         (inflight.current &&
           pendingSince.current &&
-          Date.now() - pendingSince.current > 10_000)
+          Date.now() - pendingSince.current > ACK_TIMEOUT_MS)
       ) {
         active.close();
       } else active.send("ping");
-    }, 10_000);
+    }, HEARTBEAT_MS);
+    // Phones suspend background tabs; check the connection as soon as we return.
     function wake() {
       if (document.visibilityState !== "visible") return;
       if (active?.readyState === WebSocket.OPEN) active.send("ping");
@@ -191,6 +223,7 @@ export function useRoom() {
     };
   }, [code, forget]);
 
+  /** Creates a room, or joins `joinCode` when given. */
   async function enter(name: string, mode: Mode, joinCode?: string) {
     if (busyRef.current) return;
     const normalized = joinCode?.trim().toUpperCase();
@@ -208,7 +241,7 @@ export function useRoom() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, mode }),
-          signal: AbortSignal.timeout(15_000),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         },
       );
       if (!res.headers.get("Content-Type")?.includes("application/json"))
@@ -232,6 +265,7 @@ export function useRoom() {
     }
   }
 
+  /** Sends an action against the current snapshot. Ignored while another is unacknowledged. */
   function send(action: RoomAction) {
     const view = currentRoom.current,
       ws = socket.current;

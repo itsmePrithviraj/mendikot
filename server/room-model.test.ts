@@ -1,11 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
+  advanceTimers,
   applyCommand,
   createRoom,
+  joinRoom,
+  nextDeadline,
   parseCommand,
   playerName,
-  removePlayer,
+  reconcilePresence,
   roomView,
+  setConnected,
+  TRICK_COLLECT_MS,
 } from "./room-model";
 import {
   chooseBotCard,
@@ -15,6 +20,7 @@ import {
 } from "../src/game/engine";
 import type { Seat } from "../src/game/engine";
 import { playerGame } from "../src/game/view";
+import { RECONNECT_MS } from "../src/multiplayer/protocol";
 import type { RoomAction } from "../src/multiplayer/protocol";
 
 function fixture() {
@@ -99,9 +105,13 @@ describe("authoritative multiplayer rooms", () => {
         ),
       ).toThrow(/changed/);
     }
-    const departed = structuredClone(room);
-    removePlayer(departed, "player-3", "Left.");
-    departed.revision++;
+    const departed = applyCommand(
+      room,
+      "player-3",
+      command(room.revision, { type: "leave" }),
+      connected,
+      Date.now(),
+    );
     expect(() =>
       applyCommand(
         departed,
@@ -111,29 +121,6 @@ describe("authoritative multiplayer rooms", () => {
         Date.now(),
       ),
     ).toThrow(/changed/);
-  });
-  it("requires the current revision for legacy saved lobbies", () => {
-    const { room, connected } = fixture();
-    delete room.setupRevision;
-    room.revision = 5;
-    expect(() =>
-      applyCommand(
-        room,
-        "player-1",
-        command(4, { type: "ready", ready: true }),
-        connected,
-        Date.now(),
-      ),
-    ).toThrow(/changed/);
-    expect(
-      applyCommand(
-        room,
-        "player-1",
-        command(5, { type: "ready", ready: true }),
-        connected,
-        Date.now(),
-      ).players[1]!.ready,
-    ).toBe(true);
   });
   it("requires the host, four connected seats, and readiness to start", () => {
     const { room, connected } = fixture();
@@ -272,12 +259,91 @@ describe("authoritative multiplayer rooms", () => {
     ).toThrow(/empty/);
   });
   it("ends abandoned active deals without a winner and transfers host ownership", () => {
+    const { room, connected } = fixture();
+    room.game = newGame();
+    const next = applyCommand(
+      room,
+      "player-0",
+      command(room.revision, { type: "leave" }),
+      connected,
+      Date.now(),
+    );
+    expect(next.game).toBeNull();
+    expect(next.hostId).toBe("player-1");
+    expect(next.endedReason).toMatch(/Friend 0 left/);
+    expect(next.players.every((p) => !p?.ready)).toBe(true);
+  });
+  it("holds a disconnected seat for the reconnection window, then releases it", () => {
     const { room } = fixture();
     room.game = newGame();
-    removePlayer(room, "player-0", "Host left.");
-    expect(room.game).toBeNull();
-    expect(room.hostId).toBe("player-1");
-    expect(room.endedReason).toBe("Host left.");
+    const away = setConnected(room, "player-2", false, 1_000);
+    expect(away.players[2]!.disconnectedAt).toBe(1_000);
+    expect(away.players[2]!.ready).toBe(false);
+    expect(nextDeadline(away)).toBe(1_000 + RECONNECT_MS);
+    expect(advanceTimers(away, 1_000 + RECONNECT_MS - 1)).toBe(away);
+    const back = setConnected(away, "player-2", true, 2_000);
+    expect(back.players[2]!.disconnectedAt).toBeNull();
+    const released = advanceTimers(away, 1_000 + RECONNECT_MS);
+    expect(released.players[2]).toBeNull();
+    expect(released.game).toBeNull();
+    expect(released.endedReason).toMatch(/did not reconnect/);
+    expect(released.setupRevision).toBe(released.revision);
+  });
+  it("starts every unconnected player's countdown after a restart", () => {
+    const { room } = fixture();
+    const next = reconcilePresence(room, new Set(["player-0"]), 5_000);
+    expect(next.players.map((p) => p!.disconnectedAt)).toEqual([
+      null,
+      5_000,
+      5_000,
+      5_000,
+    ]);
+    expect(reconcilePresence(next, new Set(["player-0"]), 9_000)).toBe(next);
+  });
+  it("collects a completed trick only when its timer is due", () => {
+    const { room, connected } = fixture();
+    let next = applyCommand(
+      room,
+      "player-0",
+      command(room.revision, { type: "start" }),
+      connected,
+      0,
+    );
+    for (let i = 0; i < 4; i++)
+      next = applyCommand(
+        next,
+        `player-${next.game!.turn}`,
+        command(next.revision, {
+          type: "play",
+          cardId: chooseBotCard(next.game!).id,
+        }),
+        connected,
+        0,
+      );
+    expect(next.game!.phase).toBe("trick-complete");
+    expect(next.collectAt).toBe(TRICK_COLLECT_MS);
+    expect(advanceTimers(next, TRICK_COLLECT_MS - 1)).toBe(next);
+    const collected = advanceTimers(next, TRICK_COLLECT_MS);
+    expect(collected.game!.trick).toHaveLength(0);
+    expect(collected.collectAt).toBeNull();
+  });
+  it("keeps readiness when a friend joins, and rejects a fifth player", () => {
+    const { room } = fixture();
+    room.players[3] = null;
+    const newcomer = {
+      id: "player-new",
+      name: "New",
+      tokenHash: "secret-new",
+      ready: false,
+      disconnectedAt: 0,
+    };
+    const joined = joinRoom(room, newcomer);
+    expect(joined.players[3]!.id).toBe("player-new");
+    expect(joined.players[0]!.ready).toBe(true);
+    expect(joined.setupRevision).toBe(joined.revision);
+    expect(() => joinRoom(joined, { ...newcomer, id: "fifth" })).toThrow(
+      /four players/,
+    );
   });
   it("rejects malformed commands and unsafe names", () => {
     for (const value of [
