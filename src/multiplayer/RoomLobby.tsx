@@ -229,7 +229,7 @@ export function RoomLobby({
                             : !player.connected
                               ? "Reconnecting…"
                               : player.id === room.hostId
-                                ? "Host · starts the deal"
+                                ? "Host"
                                 : player.ready
                                   ? "Ready"
                                   : "Not ready"}
