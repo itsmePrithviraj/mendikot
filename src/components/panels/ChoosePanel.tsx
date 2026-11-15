@@ -5,8 +5,7 @@ import { SuitGlyph } from "../cards";
 export function ChoosePanel({ onChoose }: { onChoose: (suit: Suit) => void }) {
   return (
     <section className="panel choose-panel" aria-labelledby="choose-title">
-      <h2 id="choose-title">Make it your suit.</h2>
-      <p>Pick hukum from your first five cards.</p>
+      <h2 id="choose-title">Choose hukum</h2>
       <div className="suit-options">
         {SUITS.map((suit) => (
           <button

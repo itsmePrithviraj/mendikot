@@ -98,12 +98,17 @@
     display: none;
   }
 }
-/* Hand cards overlap, so the bold compact index wins for longer. */
-@container card (min-width: 70px) and (max-width: 89.98px) {
-  .hand-card .face-full {
+/* Hand cards overlap and table cards are read at a glance, so the bold
+   compact face wins for longer. */
+@container card (min-width: 70px) and (max-width: 119.98px) {
+  .hand-card .face-full,
+  .played-card .face-full,
+  .last-trick .face-full {
     display: none;
   }
-  .hand-card .face-compact {
+  .hand-card .face-compact,
+  .played-card .face-compact,
+  .last-trick .face-compact {
     display: inline;
   }
 }
@@ -151,7 +156,7 @@
 .hand {
   --gap: 6px;
   --cols: 7;
-  --card-w: clamp(44px, 19.5cqw, 104px);
+  --card-w: clamp(44px, min(24.5cqw, 15dvh), 112px);
   --step: min(
     calc(var(--card-w) + 4px),
     calc((100cqw - var(--card-w) - 1px) / (var(--cols) - 1))
@@ -175,7 +180,7 @@
 }
 .hand.five-cards {
   --cols: 5;
-  --card-w: min(calc((100cqw - 32px) / 5), 88px);
+  --card-w: min(calc((100cqw - 32px) / 5), 96px);
   --step: calc(var(--card-w) + 8px);
 }
 .hand-card {
@@ -196,9 +201,19 @@
 .hand-card .card {
   transition: box-shadow var(--t-fast);
 }
-.hand-card.unplayable {
-  --card-paper: var(--ivory-dim);
-  --pip-opacity: 0.55;
+/* Unplayable cards sink under a felt tint so the playable ones read at a glance. */
+.hand-card .card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(11 31 26 / 0.46);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  pointer-events: none;
+}
+.hand-card.unplayable .card::after {
+  opacity: 1;
 }
 .hand-card.unplayable .card {
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
@@ -234,20 +249,6 @@
 .hand.dealing .hand-card {
   animation: deal-in var(--t-slow) var(--ease-out) both;
   animation-delay: calc(var(--i) * 35ms);
-}
-
-/* Narrow portrait phones: three readable rows. */
-@media (orientation: portrait) and (max-width: 359px) {
-  .hand {
-    --cols: 5;
-    --card-w: min(calc((100cqw - 16px) / 5), 64px);
-  }
-  .hand-card:nth-child(7n + 1) {
-    margin-left: calc(var(--step) - var(--card-w));
-  }
-  .hand-card:nth-child(5n + 1) {
-    margin-left: 0;
-  }
 }
 
 /* Single overlapping row in landscape. */
@@ -299,9 +300,9 @@
 
 /* ---------- Trick ---------- */
 .trick {
-  --tx: 1.04;
-  --ty: 0.5;
-  --trick-max: 128px;
+  --tx: 0.84;
+  --ty: 0.46;
+  --trick-max: 116px;
   --tw: min(
     calc(100cqw / (1 + 2 * var(--tx))),
     calc(100cqh / (1.4 * (1 + 2 * var(--ty)))),
@@ -509,7 +510,8 @@
 .reduce-motion .panel,
 .reduce-motion .home,
 .reduce-motion .toast,
-.reduce-motion .ten-chip,
+.reduce-motion .ten-card,
+.reduce-motion .play-btn,
 .reduce-motion .ten-slot.filled,
 .reduce-motion .hukum-chip {
   animation: fade-in var(--t-fast) linear both;

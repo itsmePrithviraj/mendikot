@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import type { Browser, Page } from "@playwright/test";
 import type { RoomSnapshot } from "../../src/multiplayer/protocol";
+/** Hand cards overlap; tap the visible index corner as a player would. */
+const CORNER = { position: { x: 14, y: 24 } };
 
 const baseURL = "http://localhost:8787";
 async function player(browser: Browser) {
@@ -43,12 +45,18 @@ async function table(
     .last()
     .click();
   await pages[0].getByLabel("Your name").fill(names[0]);
-  if (mode === "choose")
-    await pages[0].getByLabel("Choose hukum", { exact: false }).check();
   await pages[0]
     .getByRole("button", { name: "Create room", exact: true })
     .click();
   await expect(pages[0].locator(".room-invite strong")).toBeVisible();
+  // New rooms start in cut hukum; the host switches mode in the lobby.
+  if (mode === "choose") {
+    // The radio is controlled by the room, so it flips after the server replies.
+    await pages[0].getByLabel("Choose hukum", { exact: false }).click();
+    await expect(
+      pages[0].getByLabel("Choose hukum", { exact: false }),
+    ).toBeChecked();
+  }
   const code = (await pages[0].locator(".room-invite strong").textContent())!;
   for (let i = 1; i < 4; i++) {
     await pages[i].goto(`/?room=${code}`);
@@ -136,10 +144,8 @@ for (const mode of ["cut", "choose"] as const) {
         const page = pages[game.turn]; // Host is absolute seat zero for this deal.
         const own = await snapshot(page, code);
         await expect(page.locator(".hand-card.legal").first()).toBeEnabled();
-        await page.locator(".hand-card.legal").first().click();
-        await page
-          .getByRole("button", { name: "Play card", exact: true })
-          .click();
+        await page.locator(".hand-card.legal").first().click(CORNER);
+        await page.getByRole("button", { name: /^Play / }).click();
         await expect(page.locator(".hand-card")).toHaveCount(
           own.game!.hand.length - 1,
         );

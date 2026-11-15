@@ -45,10 +45,10 @@ import type { Stage, Status } from "./state/status";
 type SheetKind = "rules" | "menu" | "new" | "install" | "last" | null;
 
 const SHEET_TITLES: Record<Exclude<SheetKind, null>, string> = {
-  rules: "Bring the tens home.",
-  menu: "Make yourself comfortable.",
-  new: "A fresh hand?",
-  install: "A seat on your home screen.",
+  rules: "How to play",
+  menu: "Menu",
+  new: "New deal",
+  install: "Install Mendikot",
   last: "Last trick",
 };
 
@@ -75,8 +75,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   const available = useMemo(() => (game ? legalCards(game, 0) : []), [game]);
   const legal = useMemo(() => new Set(available.map((c) => c.id)), [available]);
   const canPlay = !!selected && legal.has(selected) && stage === "ready";
-  const choosing = game?.phase === "choosing-trump",
-    playing = game?.phase === "playing",
+  const playing = game?.phase === "playing",
     myTurn = !!game && playing && game.turn === 0 && stage === "ready";
   const setPrefs = (update: Partial<Preferences>) =>
     setPrefsState((p) => ({ ...p, ...update }));
@@ -184,11 +183,6 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
   const view = game ? playerGame(game, 0) : null;
   const status = hint?.status ?? statusOf(view, stage);
   const hand = game?.hands[0] ?? [];
-  const phase = choosing
-    ? "choosing"
-    : game?.phase === "complete"
-      ? "complete"
-      : "playing";
   return (
     <div
       className={`app${reduced ? " reduce-motion" : ""}${prefs.speed === "quick" ? " pace-quick" : ""}`}
@@ -197,12 +191,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
       data-stage={stage}
     >
       <CardDefs />
-      <TopBar
-        offline={offline}
-        onHelp={() => setSheet("rules")}
-        onMenu={() => setSheet("menu")}
-        onOnline={onOnline}
-      />
+      <TopBar offline={offline} onMenu={() => setSheet("menu")} />
       <main className="table" aria-label="Mendikot game table">
         {game && view ? (
           <>
@@ -210,7 +199,6 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
             <Table
               game={view}
               stage={stage}
-              status={status}
               onChoose={setTrump}
               onAgain={() => start(game.mode)}
               onChangeMode={() => setSheet("new")}
@@ -230,7 +218,8 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
               onPlay={play}
             />
             <ActionBar
-              phase={phase}
+              status={status}
+              card={hand.find((c) => c.id === selected) ?? null}
               canPlay={canPlay}
               haptic={switchTicks}
               onPlay={play}

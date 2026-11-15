@@ -17,18 +17,14 @@ export function NewDealSheet({
 }) {
   return (
     <>
-      <p>
-        {finished
-          ? "Pick how hukum is set for the next deal."
-          : "This ends the current practice deal."}
-      </p>
+      {!finished && <p>This ends the current deal.</p>}
       <ModePicker mode={mode} onChange={onMode} />
       <div className="sheet-actions">
         <button className="btn btn-quiet" onClick={onKeep}>
-          {finished ? "Not yet" : "Keep playing"}
+          Cancel
         </button>
         <button className="btn btn-primary" onClick={onDeal}>
-          Shuffle &amp; deal
+          Deal
         </button>
       </div>
     </>

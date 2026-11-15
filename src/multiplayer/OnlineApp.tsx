@@ -33,11 +33,11 @@ import type { Connection } from "./useRoom";
 type SheetKind = "rules" | "menu" | "last" | "room" | "install";
 
 const SHEET_TITLES: Record<SheetKind, string> = {
-  rules: "Bring the tens home.",
-  menu: "Make yourself comfortable.",
+  rules: "How to play",
+  menu: "Menu",
   last: "Last trick",
-  room: "Around the table",
-  install: "A seat on your home screen.",
+  room: "Room",
+  install: "Install Mendikot",
 };
 
 /** Names and presence by seat relative to the viewer: 0 is you, 2 your partner. */
@@ -215,11 +215,7 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
         data-connection={connection}
       >
         <CardDefs />
-        <TopBar
-          offline={offline}
-          onHelp={() => setSheet("rules")}
-          onMenu={() => setSheet("menu")}
-        />
+        <TopBar offline={offline} onMenu={() => setSheet("menu")} />
         <main
           className="table"
           aria-label={showTable ? "Mendikot game table" : "Play with friends"}
@@ -230,7 +226,6 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
               <Table
                 game={game}
                 stage={dealing ? "deal" : "ready"}
-                status={status}
                 interactionDisabled={disabled || !everyoneHere}
                 onChoose={(suit) => {
                   if (!disabled && everyoneHere) send({ type: "trump", suit });
@@ -270,13 +265,8 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                 onPlay={play}
               />
               <ActionBar
-                phase={
-                  game.phase === "choosing-trump"
-                    ? "choosing"
-                    : game.phase === "complete"
-                      ? "complete"
-                      : "playing"
-                }
+                status={status}
+                card={game.hand.find((c) => c.id === selected) ?? null}
                 canPlay={canPlay}
                 haptic={prefs.haptics && canSwitchTick()}
                 onPlay={play}

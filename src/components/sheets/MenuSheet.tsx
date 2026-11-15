@@ -4,34 +4,29 @@ import {
   Maximize2,
   Minimize2,
   RotateCcw,
+  Users,
   Vibrate,
   Volume2,
   Wind,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-import { canVibrate } from "../../hooks/useHaptics";
 import type { Preferences } from "../../state/prefs";
 
 function Switch({
   icon,
   label,
-  detail,
   checked,
   onChange,
 }: {
   icon: ReactNode;
   label: string;
-  detail: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
   return (
     <label className="menu-row">
       <span className="menu-icon">{icon}</span>
-      <span className="menu-copy">
-        {label}
-        <small>{detail}</small>
-      </span>
+      <span className="menu-copy">{label}</span>
       <input
         type="checkbox"
         role="switch"
@@ -100,7 +95,6 @@ export function MenuSheet({
         <Switch
           icon={<Volume2 size={s} strokeWidth={1.75} />}
           label="Card sounds"
-          detail="Cards slide, snap and shuffle"
           checked={prefs.sound}
           onChange={(sound) => setPrefs({ sound })}
         />
@@ -129,11 +123,6 @@ export function MenuSheet({
           <Switch
             icon={<Vibrate size={s} strokeWidth={1.75} />}
             label="Haptics"
-            detail={
-              canVibrate()
-                ? "A light tap on play and capture"
-                : "A light tap when you play"
-            }
             checked={prefs.haptics}
             onChange={(on) => setPrefs({ haptics: on })}
           />
@@ -141,21 +130,13 @@ export function MenuSheet({
         <Switch
           icon={<Wind size={s} strokeWidth={1.75} />}
           label="Less motion"
-          detail="Fades instead of flying cards"
           checked={prefs.reducedMotion}
           onChange={(reducedMotion) => setPrefs({ reducedMotion })}
         />
         {!online && (
           <div className="menu-row pace-row">
-            <span className="menu-copy">
-              Table pace
-              <small>Time between bot turns</small>
-            </span>
-            <div
-              className="segmented"
-              role="radiogroup"
-              aria-label="Table pace"
-            >
+            <span className="menu-copy">Bot speed</span>
+            <div className="segmented" role="radiogroup" aria-label="Bot speed">
               {(["relaxed", "quick"] as const).map((speed) => (
                 <label
                   key={speed}
@@ -177,7 +158,13 @@ export function MenuSheet({
       </div>
       <div className="menu-group">
         <Action
-          icon={<RotateCcw size={s} strokeWidth={1.75} />}
+          icon={
+            online ? (
+              <Users size={s} strokeWidth={1.75} />
+            ) : (
+              <RotateCcw size={s} strokeWidth={1.75} />
+            )
+          }
           label={online ? "Room & players" : "New deal"}
           onClick={onNewDeal}
           disabled={!hasGame}
@@ -206,10 +193,6 @@ export function MenuSheet({
           onClick={onInstall}
         />
       </div>
-      <p className="small-print">
-        Turn your phone any time. Your game stays exactly where it is. Device
-        motion preferences are also respected.
-      </p>
     </>
   );
 }

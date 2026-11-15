@@ -1,6 +1,7 @@
 /*
  * Three layout modes, one DOM.
- *   P  portrait                       bar / score / felt / hand / actions
+ *   P  portrait                       score / felt / hand / actions (menu floats
+ *                                     in the felt's top-left corner in a game)
  *   LS landscape, short (phones)      brand·score·tools / felt / hand·actions
  *   W  landscape, tall (tablet, desk) bar over a framed table
  */
@@ -45,27 +46,49 @@
   min-width: 0;
 }
 .score {
-  height: 48px;
+  height: 56px;
   padding: 0 var(--s4);
 }
 .felt {
-  padding: var(--s2) var(--s2) 0;
+  padding: var(--s1) var(--s2) 0;
 }
 .hand {
-  padding: var(--s2) var(--s2) 0;
+  padding: var(--s3) var(--s2) 0;
 }
 /* The hand only takes focus briefly after a keyboard play; cards show their own ring. */
 .hand:focus {
   outline: none;
 }
 .actions {
-  min-height: 72px;
-  padding: var(--s3) var(--s4);
+  min-height: 66px;
+  padding: var(--s2) var(--s4);
+}
+/* In a portrait game the scoreboard is the top row; the bar shrinks to its
+   menu button, which sits in the felt's top-left corner opposite Last trick. */
+@media (orientation: portrait) {
+  .app[data-screen="game"] {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .app[data-screen="game"] .bar {
+    position: absolute;
+    z-index: 6;
+    top: calc(var(--safe-top) + 56px + var(--s1));
+    left: calc(var(--safe-left) + var(--s2));
+    height: auto;
+    padding: 0;
+  }
+  .app[data-screen="game"] .wordmark {
+    display: none;
+  }
+  .app[data-screen="game"] .table-tools {
+    flex-direction: row-reverse;
+  }
 }
 .app[data-screen="home"] .table {
   grid-template-rows: minmax(0, 1fr);
 }
-.app[data-phase="complete"] .hand {
+.app[data-phase="complete"] .hand,
+.app[data-phase="complete"] .actions {
   display: none;
 }
 
@@ -108,14 +131,17 @@
     padding: var(--s1) var(--s3) var(--s2);
     align-self: end;
   }
-  /* Play sits at the felt's bottom-right so the hand gets the full width. */
+  /* Status and Play share the felt's bottom row so the hand gets the full width. */
   .actions {
     grid-area: felt;
     z-index: 4;
-    min-height: 0;
+    min-height: 48px;
     align-self: end;
-    justify-self: end;
-    padding: 0 var(--s3) 2px 0;
+    padding: 0 var(--s3) 2px;
+  }
+  /* Play goes to the right so it never covers the lifted card. */
+  .actions.can-play {
+    justify-content: flex-end;
   }
   .app[data-screen="home"] .home {
     grid-area: 2 / 1 / -1 / -1;
