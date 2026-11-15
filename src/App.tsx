@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { invitedRoom, rememberedRoom } from "./multiplayer/useRoom";
+import type { RoomIntent } from "./multiplayer/RoomLobby";
 import { PracticeApp } from "./PracticeApp";
 
 // Multiplayer code loads only when someone opens a room.
@@ -7,10 +8,11 @@ const OnlineApp = lazy(() =>
   import("./multiplayer/OnlineApp").then((m) => ({ default: m.OnlineApp })),
 );
 
-/** Opens straight into a room for invite links and reloads; otherwise practice. */
+/** Opens straight into a room for invite links and reloads; otherwise the
+ * start screen (part of PracticeApp) offers solo play, create or join. */
 export default function App() {
-  const [online, setOnline] = useState(
-    () => !!invitedRoom() || !!rememberedRoom(),
+  const [online, setOnline] = useState<RoomIntent | null>(() =>
+    invitedRoom() || rememberedRoom() ? "join" : null,
   );
   return online ? (
     <Suspense
@@ -22,9 +24,9 @@ export default function App() {
         </div>
       }
     >
-      <OnlineApp onBack={() => setOnline(false)} />
+      <OnlineApp intent={online} onBack={() => setOnline(null)} />
     </Suspense>
   ) : (
-    <PracticeApp onOnline={() => setOnline(true)} />
+    <PracticeApp onOnline={setOnline} />
   );
 }

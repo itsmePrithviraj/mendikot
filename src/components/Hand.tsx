@@ -10,7 +10,7 @@ export function Hand({
   selected,
   disabled,
   dealing,
-  shaking,
+  shake,
   canPlay,
   haptic,
   onSelect,
@@ -22,7 +22,8 @@ export function Hand({
   selected: string | null;
   disabled: boolean;
   dealing: boolean;
-  shaking: string | null;
+  /** The refused card; `n` changes on every refused tap. */
+  shake: { id: string; n: number } | null;
   canPlay: boolean;
   haptic: boolean;
   onSelect: (card: Card) => void;
@@ -80,7 +81,7 @@ export function Hand({
             dim={myTurn && !isLegal}
             selected={selected === card.id}
             disabled={disabled}
-            shaking={shaking === card.id}
+            shake={shake?.id === card.id ? shake.n : 0}
             // Matches the vibration on a refused card in App's select().
             haptic={haptic && myTurn && !isLegal}
             onSelect={() => onSelect(card)}

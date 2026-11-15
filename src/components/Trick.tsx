@@ -14,7 +14,7 @@ export function Trick({
   return (
     <div
       className={`trick${winner !== null ? ` is-complete to-${winner}` : ""}`}
-      aria-label="Current trick"
+      aria-label="Current sheep"
     >
       {plays.map((p, i) => (
         <div

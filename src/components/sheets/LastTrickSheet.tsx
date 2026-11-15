@@ -6,7 +6,7 @@ import { CardFace } from "../cards";
 export function LastTrickSheet({ game }: { game: PlayerGame }) {
   const { names } = useTableIdentity();
   const last = game.lastTrick;
-  if (!last) return <p>No trick has been collected yet.</p>;
+  if (!last) return <p>No sheep has been collected yet.</p>;
   return (
     <>
       <p>

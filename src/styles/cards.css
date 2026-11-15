@@ -261,9 +261,6 @@
     --lift: -8px;
   }
 }
-.hand-card.shake {
-  animation: shake var(--t-base) var(--ease-out);
-}
 .app[data-stage="shuffle"] .hand-card {
   opacity: 0;
 }
@@ -475,17 +472,6 @@
     opacity: 0;
   }
 }
-@keyframes shake {
-  20% {
-    translate: -5px 0;
-  }
-  45% {
-    translate: 5px 0;
-  }
-  70% {
-    translate: -3px 0;
-  }
-}
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -538,8 +524,7 @@
       forwards;
 }
 .reduce-motion .seat.is-turn .avatar,
-.reduce-motion .seat.is-winner .avatar,
-.reduce-motion .hand-card.shake {
+.reduce-motion .seat.is-winner .avatar {
   animation: none;
 }
 .reduce-motion .hand-card {

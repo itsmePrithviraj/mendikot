@@ -41,8 +41,7 @@ async function table(
   const pages = users.map((u) => u.page);
   await pages[0].goto("/");
   await pages[0]
-    .getByRole("button", { name: "Play with friends", exact: true })
-    .last()
+    .getByRole("button", { name: "Create a room", exact: true })
     .click();
   await pages[0].getByLabel("Your name").fill(names[0]);
   await pages[0]
@@ -354,8 +353,7 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
   try {
     await page.goto("/");
     await page
-      .getByRole("button", { name: "Play with friends", exact: true })
-      .last()
+      .getByRole("button", { name: "Create a room", exact: true })
       .click();
     for (const [name, width, height] of [
       ["desktop", 1440, 900],
@@ -427,6 +425,66 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
         page.getByRole("button", { name: "Ready to play", exact: true }),
       ).toBeInViewport();
     }
+  } finally {
+    await context.close();
+  }
+});
+
+test("a host alone fills the room with bots and plays a whole deal", async ({
+  browser,
+}) => {
+  const { context, page } = await player(browser);
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "Create a room", exact: true })
+      .click();
+    await page.getByLabel("Your name").fill("Asha");
+    await page
+      .getByRole("button", { name: "Create room", exact: true })
+      .click();
+    await connected(page);
+    const code = (await page.locator(".room-invite strong").textContent())!;
+    await page.getByRole("button", { name: "Add 3 bots" }).click();
+    await expect(page.locator(".lobby-seat.is-bot")).toHaveCount(3);
+    // The host can send one back and fill the seat again.
+    await page
+      .getByRole("button", { name: /^Remove bot / })
+      .first()
+      .click();
+    await expect(page.locator(".lobby-seat.is-bot")).toHaveCount(2);
+    await page.getByRole("button", { name: "Add a bot" }).click();
+    await expect(page.locator(".lobby-seat.is-bot")).toHaveCount(3);
+    expect(
+      await page
+        .locator(".room-scroll")
+        .evaluate((e) => e.scrollHeight <= e.clientHeight),
+    ).toBe(true);
+    await page
+      .getByRole("button", { name: "Ready to play", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Start deal" }).click();
+    await expect(page.locator(".hand-card")).toHaveCount(13);
+    await expect(page.locator(".seat-bot")).toHaveCount(3);
+    let moves = 0;
+    for (let i = 0; i < 400; i++) {
+      const game = (await snapshot(page, code)).game!;
+      if (game.phase === "complete") break;
+      if (game.phase === "playing" && game.turn === 0) {
+        await expect(page.locator(".hand-card.legal").first()).toBeEnabled();
+        await page.locator(".hand-card.legal").first().click(CORNER);
+        await page.getByRole("button", { name: /^Play / }).click();
+        await expect(page.locator(".hand-card")).toHaveCount(
+          game.hand.length - 1,
+        );
+        moves++;
+      } else await page.waitForTimeout(250);
+    }
+    expect(moves).toBe(13);
+    await expect(
+      page.getByRole("button", { name: "Return to room for a rematch" }),
+    ).toBeVisible();
   } finally {
     await context.close();
   }

@@ -11,9 +11,10 @@ export function Seat({
   turn: boolean;
   winner: boolean;
 }) {
-  const { names, online, connected } = useTableIdentity();
+  const { names, online, connected, bots } = useTableIdentity();
   const name = names[seat];
   const away = online && !connected[seat];
+  const bot = bots[seat];
   return (
     <div
       className={`seat seat-${seat}${turn ? " is-turn" : ""}${winner ? " is-winner" : ""}${away ? " is-away" : ""}`}
@@ -29,7 +30,7 @@ export function Seat({
           <span className="seat-role">
             {seat === PARTNER ? "Partner" : "Opponent"}
           </span>
-          {(away || !online) && (
+          {(away || bot) && (
             <span className="seat-bot">{away ? "Away" : "Bot"}</span>
           )}
         </span>

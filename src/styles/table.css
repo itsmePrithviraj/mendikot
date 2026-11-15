@@ -558,8 +558,27 @@
   width: min(100%, 420px);
   margin: 0 auto;
 }
-.home-controls .mode-picker {
-  margin-bottom: var(--s2);
+.home-controls {
+  gap: var(--s5);
+}
+.home-group {
+  display: grid;
+  gap: var(--s3);
+}
+.home-group h2 {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--on-felt-2);
+  text-align: center;
+}
+.home-rooms {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.home-rooms .btn {
+  min-width: 0;
+  padding-inline: var(--s3);
 }
 .start-btn {
   min-height: 54px;
@@ -821,8 +840,9 @@
   .home-controls {
     gap: var(--s2);
   }
-  .home-controls .mode-picker {
-    margin-bottom: 0;
+  .home-controls,
+  .home-group {
+    gap: var(--s2);
   }
   .start-btn {
     min-height: 48px;

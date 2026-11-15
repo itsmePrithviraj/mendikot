@@ -32,7 +32,7 @@ test("five cards precede chosen hukum; rotation and refresh preserve the hand", 
   );
   await page.goto("/");
   await page.getByLabel("Choose hukum", { exact: false }).check();
-  await page.getByRole("button", { name: "Practice with bots" }).click();
+  await page.getByRole("button", { name: "Play solo" }).click();
   await expect(
     page.getByRole("button", { name: "Choose hearts as hukum" }),
   ).toBeVisible();
@@ -69,7 +69,7 @@ test("cut mode starts with thirteen; preview does not play; confirmation advance
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Practice with bots" }).click();
+  await page.getByRole("button", { name: "Play solo" }).click();
   await expect(page.locator(".turn-status")).toContainText("Your turn", {
     timeout: 10000,
   });
@@ -95,7 +95,7 @@ test("production PWA survives an offline reload with its saved game", async ({
   });
   await page.reload();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-  await page.getByRole("button", { name: "Practice with bots" }).click();
+  await page.getByRole("button", { name: "Play solo" }).click();
   await expect(page.locator(".turn-status")).toContainText("Your turn", {
     timeout: 10000,
   });
@@ -160,7 +160,11 @@ async function load(page: Page, game: Game | null) {
       "mendikot.preferences.v1",
       JSON.stringify({ reducedMotion: true }),
     );
-    if (g) localStorage.setItem("mendikot.game.v1", JSON.stringify(g));
+    if (g) {
+      localStorage.setItem("mendikot.game.v1", JSON.stringify(g));
+      // As if this tab was already showing the deal: reloads resume it.
+      sessionStorage.setItem("mendikot.screen", "game");
+    } else sessionStorage.removeItem("mendikot.screen");
   }, game);
   await page.reload();
   await page.evaluate(() => document.fonts.ready);
@@ -295,7 +299,7 @@ for (const v of VIEWS) {
       }
       if (s.name === "lobby")
         await expect(
-          page.getByRole("button", { name: "Practice with bots" }),
+          page.getByRole("button", { name: "Play solo" }),
         ).toBeVisible();
       if (s.name === "choosing")
         await expect(
@@ -364,7 +368,7 @@ test("plays an entire deal through the interface and shows the result", async ({
   );
   await page.goto("/");
   await page.clock.install();
-  await page.getByRole("button", { name: "Practice with bots" }).click();
+  await page.getByRole("button", { name: "Play solo" }).click();
   let complete = false;
   for (let i = 0; i < 150; i++) {
     await page.clock.fastForward(2500);
@@ -464,4 +468,108 @@ test("portrait sheets fit without scrolling, sound settings included", async ({
       await expect(page.getByRole("dialog")).not.toBeVisible();
     }
   }
+});
+
+test("the start screen offers solo, create and join, and the menu returns to it", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  for (const name of ["Play solo", "Create a room", "Join a room"])
+    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Join a room", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Join a room" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Room code")).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: "Play solo", exact: true }).click();
+  await expect(page.locator(".hand-card")).toHaveCount(13);
+  await expect(page.locator(".score")).toContainText("0 sheeps");
+  const hand = await page
+    .locator(".hand-card")
+    .evaluateAll((cards) => cards.map((c) => c.getAttribute("data-card")));
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await page.getByRole("button", { name: "Main menu", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Continue solo game", exact: true })
+    .click();
+  await expect(page.locator(".hand-card")).toHaveCount(13);
+  // A reload in the same tab stays at the table.
+  await page.reload();
+  await expect(page.locator(".hand-card")).toHaveCount(13);
+  expect(
+    await page
+      .locator(".hand-card")
+      .evaluateAll((cards) => cards.map((c) => c.getAttribute("data-card"))),
+  ).toEqual(hand);
+  // A fresh visit opens on the start screen, with the deal waiting.
+  const fresh = await context.newPage();
+  await fresh.goto("/");
+  await expect(
+    fresh.getByRole("button", { name: "Continue solo game", exact: true }),
+  ).toBeVisible();
+  await expect(fresh.locator(".hand-card")).toHaveCount(0);
+});
+
+test("a refused card shakes and buzzes on every tap", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { buzz: number }).buzz = 0;
+    navigator.vibrate = () => {
+      (window as unknown as { buzz: number }).buzz++;
+      return true;
+    };
+  });
+  await page.goto("/");
+  await page.evaluate((g) => {
+    localStorage.setItem(
+      "mendikot.preferences.v1",
+      JSON.stringify({ reducedMotion: false, sound: false, defaults: 2 }),
+    );
+    localStorage.setItem("mendikot.game.v1", JSON.stringify(g));
+    sessionStorage.setItem("mendikot.screen", "game");
+  }, playingGame());
+  await page.reload();
+  const refused = page.locator(".hand-card.unplayable").first();
+  for (let tap = 1; tap <= 3; tap++) {
+    await refused.click(CORNER);
+    expect(
+      await refused.evaluate((el) => el.getAnimations().length),
+      `tap ${tap} shakes`,
+    ).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() => (window as unknown as { buzz: number }).buzz),
+    ).toBe(tap);
+    await expect
+      .poll(() => refused.evaluate((el) => el.getAnimations().length))
+      .toBe(0);
+  }
+  await expect(page.locator(".turn-status")).toContainText("Follow");
+});
+
+test("sound and haptics start on, also for settings saved before that default", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("switch", { name: "Card sounds" })).toBeChecked();
+  await expect(page.getByRole("switch", { name: "Haptics" })).toBeChecked();
+  // An older save wrote sound: false for everyone; it now takes the new default.
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "mendikot.preferences.v1",
+      JSON.stringify({ sound: false, haptics: false, speed: "quick" }),
+    ),
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("switch", { name: "Card sounds" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Quick" })).toBeChecked();
+  // A choice made now sticks.
+  await page.getByRole("switch", { name: "Card sounds" }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(
+    page.getByRole("switch", { name: "Card sounds" }),
+  ).not.toBeChecked();
 });

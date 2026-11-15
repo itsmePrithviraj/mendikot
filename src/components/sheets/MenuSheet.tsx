@@ -1,6 +1,7 @@
 import {
   ArrowDownToLine,
   CircleHelp,
+  House,
   Maximize2,
   Minimize2,
   RotateCcw,
@@ -73,7 +74,7 @@ export function MenuSheet({
   onNewDeal,
   onRules,
   onVolumePreview,
-  onOnline,
+  onHome,
   online = false,
 }: {
   online?: boolean;
@@ -87,8 +88,8 @@ export function MenuSheet({
   onInstall: () => void;
   onNewDeal: () => void;
   onRules: () => void;
-  /** Practice only: leave the saved deal for a private room. */
-  onOnline?: () => void;
+  /** Solo only: back to the start screen; the deal stays saved. */
+  onHome?: () => void;
   onVolumePreview: () => void;
 }) {
   const s = 20;
@@ -172,11 +173,11 @@ export function MenuSheet({
           onClick={onNewDeal}
           disabled={!hasGame}
         />
-        {onOnline && hasGame && (
+        {onHome && hasGame && (
           <Action
-            icon={<Users size={s} strokeWidth={1.75} />}
-            label="Play with friends"
-            onClick={onOnline}
+            icon={<House size={s} strokeWidth={1.75} />}
+            label="Main menu"
+            onClick={onHome}
           />
         )}
         <Action

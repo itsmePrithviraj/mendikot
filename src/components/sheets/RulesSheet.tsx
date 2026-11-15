@@ -3,19 +3,19 @@ export function RulesSheet() {
     <>
       <p>
         Four players in two teams; partners sit opposite. Play passes
-        anticlockwise.
+        anticlockwise, one card each: the four cards make a sheep.
       </p>
       <ul className="rules-list">
         <li>
           <strong>Follow suit</strong> if you can. Otherwise play any card.
         </li>
         <li>
-          <strong>Highest hukum wins.</strong> If none is played, the highest
-          card of the suit led wins. A K Q J 10 … 2.
+          <strong>Highest hukum takes the sheep.</strong> If none is played, the
+          highest card of the suit led takes it. A K Q J 10 … 2.
         </li>
         <li>
           <strong>Win the tens.</strong> Three tens win the deal; all four is a
-          Mendikot. At two each, more tricks wins.
+          Mendikot. At two each, more sheeps wins.
         </li>
         <li>
           <strong>Cut hukum:</strong> 13 cards each. The first off-suit card

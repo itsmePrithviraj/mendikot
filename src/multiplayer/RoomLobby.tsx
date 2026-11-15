@@ -1,18 +1,23 @@
 import { useState } from "react";
-import { Check, Copy, LogOut, Share2 } from "lucide-react";
+import { Bot, Check, Copy, LogOut, Share2, X } from "lucide-react";
 import type { Mode, Seat } from "../game/engine";
 import { ModePicker } from "../components/panels/ModePicker";
 import type { RoomAction, RoomSnapshot } from "./protocol";
 import { invitedRoom } from "./useRoom";
 
-/** Create-or-join form shown before the player has a seat. */
+/** What the start screen asked for. */
+export type RoomIntent = "create" | "join";
+
+/** Name (and, to join, the room code) before the player has a seat. */
 export function RoomEntry({
+  intent,
   busy,
   notice,
   onEnter,
   onEdit,
   onBack,
 }: {
+  intent: RoomIntent;
   busy: boolean;
   /** A confirmation such as "You left room ABCD2345." */
   notice: string;
@@ -24,7 +29,8 @@ export function RoomEntry({
 }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState(invitedRoom);
-  const [joining, setJoining] = useState(() => !!invitedRoom());
+  // An invite link always means joining that room.
+  const joining = intent === "join" || !!invitedRoom();
   return (
     <section className="room-panel" aria-labelledby="room-entry-title">
       {notice && (
@@ -32,31 +38,7 @@ export function RoomEntry({
           {notice}
         </p>
       )}
-      <h1 id="room-entry-title">Play with friends</h1>
-      <div className="room-tabs" role="group" aria-label="Room options">
-        <button
-          className={!joining ? "active" : ""}
-          aria-pressed={!joining}
-          onClick={() => {
-            setJoining(false);
-            onEdit();
-          }}
-          disabled={busy}
-        >
-          New room
-        </button>
-        <button
-          className={joining ? "active" : ""}
-          aria-pressed={joining}
-          onClick={() => {
-            setJoining(true);
-            onEdit();
-          }}
-          disabled={busy}
-        >
-          Join with code
-        </button>
-      </div>
+      <h1 id="room-entry-title">{joining ? "Join a room" : "Create a room"}</h1>
       <form
         className="room-form"
         onChange={onEdit}
@@ -103,7 +85,7 @@ export function RoomEntry({
         </button>
       </form>
       <button className="btn-link room-back" onClick={onBack} disabled={busy}>
-        Back to practice
+        Back
       </button>
     </section>
   );
@@ -141,12 +123,13 @@ export function RoomLobby({
   const link = new URL(`?room=${room.code}`, location.href).href;
   const who = (p: { id: string; name: string }) =>
     p.id === mine.id ? "you" : p.name;
-  const away = room.players.filter((p) => !p.connected).map(who);
-  const unready = room.players.filter((p) => !p.ready).map(who);
+  const people = room.players.filter((p) => !p.bot);
+  const away = people.filter((p) => !p.connected).map(who);
+  const unready = people.filter((p) => !p.ready).map(who);
   const missing = 4 - room.players.length;
   const waiting =
     missing > 0
-      ? `Waiting for ${missing} more ${missing === 1 ? "player" : "players"}`
+      ? `Waiting for ${missing} more ${missing === 1 ? "player" : "players"}${host ? " or bots" : ""}`
       : away.length
         ? `Waiting for ${listNames(away)} to reconnect`
         : unready.length
@@ -218,13 +201,15 @@ export function RoomLobby({
               const player = room.players.find((p) => p.seat === seat);
               return (
                 <div
-                  className={`lobby-seat${player?.id === mine.id ? " is-you" : ""}${player?.ready && player.connected ? " is-ready" : ""}`}
+                  className={`lobby-seat${player?.id === mine.id ? " is-you" : ""}${player?.bot ? " is-bot" : player?.ready && player.connected ? " is-ready" : ""}`}
                   key={seat}
                 >
                   {player ? (
                     <>
                       <span className="avatar" aria-hidden="true">
-                        {player.ready && player.connected ? (
+                        {player.bot ? (
+                          <Bot size={18} strokeWidth={1.75} />
+                        ) : player.ready && player.connected ? (
                           <Check size={16} strokeWidth={2.5} />
                         ) : (
                           player.name[0]
@@ -236,17 +221,36 @@ export function RoomLobby({
                           {player.id === mine.id ? " (you)" : ""}
                         </strong>
                         <span>
-                          {!player.connected
-                            ? "Reconnecting…"
-                            : player.ready
-                              ? "Ready"
-                              : "Not ready"}
+                          {player.bot
+                            ? "Bot"
+                            : !player.connected
+                              ? "Reconnecting…"
+                              : player.ready
+                                ? "Ready"
+                                : "Not ready"}
                           {player.id === room.hostId ? " · Host" : ""}
                         </span>
                       </div>
+                      {player.bot && host && (
+                        <button
+                          className="icon-btn seat-remove"
+                          disabled={disabled}
+                          onClick={() =>
+                            send({
+                              type: "bot",
+                              add: false,
+                              seat: seat as Seat,
+                            })
+                          }
+                          aria-label={`Remove bot ${player.name}`}
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
                     </>
                   ) : (
                     <button
+                      className="seat-take"
                       disabled={disabled}
                       onClick={() => send({ type: "seat", seat: seat as Seat })}
                       aria-label={`Sit in seat ${seat + 1}`}
@@ -261,6 +265,16 @@ export function RoomLobby({
           </section>
         ))}
       </div>
+      {host && missing > 0 && (
+        <button
+          className="btn btn-ghost add-bots"
+          disabled={disabled}
+          onClick={() => send({ type: "bot", add: true })}
+        >
+          <Bot size={18} strokeWidth={1.75} />
+          {missing === 1 ? "Add a bot" : `Add ${missing} bots`}
+        </button>
+      )}
       {host ? (
         <fieldset disabled={disabled}>
           <ModePicker

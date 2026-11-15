@@ -2,6 +2,7 @@ import type { PlayerGame } from "../game/view";
 import type { Team } from "../game/engine";
 import { tens } from "../game/engine";
 import { SuitGlyph } from "./cards";
+import { sheep } from "../state/names";
 
 function TeamScore({ game, team }: { game: PlayerGame; team: Team }) {
   const won = tens(game, team);
@@ -13,10 +14,10 @@ function TeamScore({ game, team }: { game: PlayerGame; team: Team }) {
         <span
           className="team-tricks tnum"
           role="img"
-          aria-label={`${tricks} ${tricks === 1 ? "trick" : "tricks"}`}
+          aria-label={sheep(tricks)}
         >
           {tricks}
-          <small aria-hidden="true"> {tricks === 1 ? "trick" : "tricks"}</small>
+          <small aria-hidden="true"> {tricks === 1 ? "sheep" : "sheeps"}</small>
         </span>
       </span>
       <span className="ten-row">

@@ -27,6 +27,7 @@ import { statusOf } from "../state/status";
 import type { Status } from "../state/status";
 import type { RoomSnapshot } from "./protocol";
 import { RoomDetails, RoomEntry, RoomLobby } from "./RoomLobby";
+import type { RoomIntent } from "./RoomLobby";
 import { useRoom } from "./useRoom";
 import type { Connection } from "./useRoom";
 
@@ -35,7 +36,7 @@ type SheetKind = "rules" | "menu" | "last" | "room" | "install";
 const SHEET_TITLES: Record<SheetKind, string> = {
   rules: "How to play",
   menu: "Menu",
-  last: "Last trick",
+  last: "Last sheep",
   room: "Room",
   install: "Install Mendikot",
 };
@@ -44,14 +45,16 @@ const SHEET_TITLES: Record<SheetKind, string> = {
 function identityOf(room: RoomSnapshot | null) {
   const names: string[] = [];
   const connected: boolean[] = [];
+  const bots: boolean[] = [];
   for (let relative = 0; relative < 4; relative++) {
     const player = room?.players.find(
       (p) => p.seat === (room.yourSeat + relative) % 4,
     );
     names.push(relative === 0 ? "You" : (player?.name ?? "Empty seat"));
     connected.push(!!player?.connected);
+    bots.push(!!player?.bot);
   }
-  return { names, connected, online: true };
+  return { names, connected, bots, online: true };
 }
 
 /** "1:05" until `deadline`. */
@@ -103,10 +106,19 @@ function useNow(active: boolean) {
 }
 
 /** The online table: lobby, live game and results for one private room. */
-export function OnlineApp({ onBack }: { onBack: () => void }) {
+export function OnlineApp({
+  intent,
+  onBack,
+}: {
+  /** What the start screen asked for when there is no room yet. */
+  intent: RoomIntent;
+  onBack: () => void;
+}) {
   const client = useRoom();
   const { room, code, connection, pending, busy, error, send } = client;
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  // `n` counts refused taps so the same card shakes again on every tap.
+  const [shake, setShake] = useState<{ id: string; n: number } | null>(null);
   const [prefs, setPrefs] = useState(readPrefs);
   const [selected, setSelected] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(true);
@@ -249,12 +261,14 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                 selected={selected}
                 disabled={!myTurn}
                 dealing={dealing}
-                shaking={null}
+                shake={shake}
                 canPlay={canPlay}
                 haptic={prefs.haptics && canSwitchTick()}
                 onSelect={(card) => {
                   if (!legal.has(card.id)) {
                     client.setError("Follow the suit that was led.");
+                    setShake((old) => ({ id: card.id, n: (old?.n ?? 0) + 1 }));
+                    setSelected(null);
                     tap(10);
                     return;
                   }
@@ -331,6 +345,7 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                 </section>
               ) : (
                 <RoomEntry
+                  intent={intent}
                   busy={busy}
                   notice={client.notice}
                   onEdit={() => error && client.setError("")}

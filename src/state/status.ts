@@ -38,8 +38,8 @@ export function statusOf(
     return {
       text:
         winner === 0
-          ? "You take the trick"
-          : `${names[winner]} takes the trick`,
+          ? "You take the sheep"
+          : `${names[winner]} takes the sheep`,
       mine: false,
     };
   }
