@@ -767,4 +767,25 @@ describe("bots in private rooms", () => {
       if (deal === 1) expect(room.game!.trump).not.toBeNull();
     }
   });
+
+  it("keeps a pending bot move across a restart and runs it once", () => {
+    let { room, connected } = withBots();
+    room = act(room, "host", { type: "start" }, connected, 0);
+    room = act(
+      room,
+      "host",
+      { type: "play", cardId: chooseBotCard(room.game!).id },
+      connected,
+      10,
+    );
+    const due = room.botAt!;
+    // The object restarts with the host's socket still open.
+    expect(reconcilePresence(room, new Set(["host"]), 20)).toBe(room);
+    expect(nextDeadline(room)).toBe(due);
+    const after = advanceTimers(room, due);
+    expect(after.game!.trick).toHaveLength(2);
+    // A second alarm for the same moment changes nothing more.
+    const again = advanceTimers(after, due);
+    expect(again.game!.trick).toHaveLength(2);
+  });
 });
