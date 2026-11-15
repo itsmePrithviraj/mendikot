@@ -409,13 +409,22 @@
   margin: var(--s3) 0 var(--s4);
 }
 .ten-card {
-  opacity: 0.42;
   animation: pop-in var(--t-base) var(--ease-out) both;
   animation-delay: calc(var(--i) * 60ms + 200ms);
 }
 .ten-card.won {
-  opacity: 1;
   transform: translateY(-6px);
+}
+/* A lost ten stays a real card with an edge, shaded by the felt. */
+.ten-card:not(.won) .card {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.22);
+}
+.ten-card:not(.won) .card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(15 47 40 / 0.62);
 }
 .ten-card.won .card {
   box-shadow:
@@ -684,7 +693,7 @@
     font-size: var(--fs-xs);
   }
   .felt {
-    grid-template-columns: minmax(54px, 17%) minmax(0, 1fr) minmax(54px, 17%);
+    grid-template-columns: minmax(60px, 18%) minmax(0, 1fr) minmax(60px, 18%);
   }
   .seat {
     --avatar: 34px;

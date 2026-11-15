@@ -103,12 +103,14 @@
 @container card (min-width: 70px) and (max-width: 119.98px) {
   .hand-card .face-full,
   .played-card .face-full,
-  .last-trick .face-full {
+  .last-trick .face-full,
+  .ten-card .face-full {
     display: none;
   }
   .hand-card .face-compact,
   .played-card .face-compact,
-  .last-trick .face-compact {
+  .last-trick .face-compact,
+  .ten-card .face-compact {
     display: inline;
   }
 }
@@ -222,17 +224,14 @@
 .hand.restricted .hand-card.legal {
   --lift: -10px;
 }
+/* No z-index: raising the selected card would hide its neighbour's index. */
 .hand-card.selected {
   --lift: calc(var(--card-w) * -0.2);
-  z-index: 1;
 }
 /* Overlapped cards show only their index strip; the centre art would peek
    out as stray slivers, so only the last card of each row draws it. */
 .hand:not(.five-cards) .hand-card:not(:last-child) .compact-art {
   display: none;
-}
-.hand-card.selected .compact-art {
-  display: inline;
 }
 @media (orientation: portrait) {
   .hand:not(.five-cards) .hand-card:nth-child(7n) .compact-art {
