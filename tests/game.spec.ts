@@ -197,8 +197,13 @@ async function checkLayout(
       },
       small,
       buttons: [...document.querySelectorAll("button")]
-        .filter((b) => visible(b) && !b.closest(".hand") && !b.closest("dialog"))
-        .map((b) => ({ name: b.textContent || b.getAttribute("aria-label"), ...box(b) })),
+        .filter(
+          (b) => visible(b) && !b.closest(".hand") && !b.closest("dialog"),
+        )
+        .map((b) => ({
+          name: b.textContent || b.getAttribute("aria-label"),
+          ...box(b),
+        })),
       cards: select(".hand-card"),
       inside: select(
         ".play-btn, .turn-status, .hukum-chip, .seat, .played-card, .start-btn, .suit-option, .result-panel .btn",
@@ -208,15 +213,21 @@ async function checkLayout(
       ),
     };
   });
-  expect(report.scroll.w, `${label} horizontal overflow`).toBeLessThanOrEqual(v.width);
-  expect(report.scroll.h, `${label} vertical overflow`).toBeLessThanOrEqual(v.height);
+  expect(report.scroll.w, `${label} horizontal overflow`).toBeLessThanOrEqual(
+    v.width,
+  );
+  expect(report.scroll.h, `${label} vertical overflow`).toBeLessThanOrEqual(
+    v.height,
+  );
   expect(report.small, `${label} text under 11px`).toEqual([]);
   for (const b of report.buttons) {
     expect(b.w, `${label} ${b.name} width`).toBeGreaterThanOrEqual(44);
     expect(b.h, `${label} ${b.name} height`).toBeGreaterThanOrEqual(44);
   }
   for (const c of report.cards) {
-    expect(c.w, `${label} card width`).toBeGreaterThanOrEqual(v.width <= 320 ? 40 : 44);
+    expect(c.w, `${label} card width`).toBeGreaterThanOrEqual(
+      v.width <= 320 ? 40 : 44,
+    );
     expect(c.h, `${label} card height`).toBeGreaterThanOrEqual(44);
   }
   if (v.width > v.height && report.cards.length > 1) {
@@ -226,10 +237,18 @@ async function checkLayout(
   }
   const tolerance = 1;
   for (const b of [...report.inside, ...report.cards]) {
-    expect(b.x, `${label} left edge`).toBeGreaterThanOrEqual(safe.left - tolerance);
-    expect(b.y, `${label} top edge`).toBeGreaterThanOrEqual(safe.top - tolerance);
-    expect(b.x + b.w, `${label} right edge`).toBeLessThanOrEqual(v.width - safe.right + tolerance);
-    expect(b.y + b.h, `${label} bottom edge`).toBeLessThanOrEqual(v.height - safe.bottom + tolerance);
+    expect(b.x, `${label} left edge`).toBeGreaterThanOrEqual(
+      safe.left - tolerance,
+    );
+    expect(b.y, `${label} top edge`).toBeGreaterThanOrEqual(
+      safe.top - tolerance,
+    );
+    expect(b.x + b.w, `${label} right edge`).toBeLessThanOrEqual(
+      v.width - safe.right + tolerance,
+    );
+    expect(b.y + b.h, `${label} bottom edge`).toBeLessThanOrEqual(
+      v.height - safe.bottom + tolerance,
+    );
   }
   for (const size of report.statusFont)
     expect(size, `${label} status size`).toBeGreaterThanOrEqual(12);
@@ -250,20 +269,38 @@ for (const v of VIEWS) {
       await load(page, s.game);
       if (s.name === "playing") {
         await page.locator(".hand-card.legal").first().click();
-        await expect(page.locator(".played-card").getByRole("img")).toHaveCount(3);
-        for (const card of await page.locator(".played-card").getByRole("img").all())
-          await expect(card).toHaveAttribute("aria-label", / of (spades|hearts|clubs|diamonds)$/);
-        await expect(page.getByRole("button", { name: "Play card", exact: true })).toBeEnabled();
+        await expect(page.locator(".played-card").getByRole("img")).toHaveCount(
+          3,
+        );
+        for (const card of await page
+          .locator(".played-card")
+          .getByRole("img")
+          .all())
+          await expect(card).toHaveAttribute(
+            "aria-label",
+            / of (spades|hearts|clubs|diamonds)$/,
+          );
+        await expect(
+          page.getByRole("button", { name: "Play card", exact: true }),
+        ).toBeEnabled();
       }
       if (s.name === "lobby")
-        await expect(page.getByRole("button", { name: "Take your seat" })).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Take your seat" }),
+        ).toBeVisible();
       if (s.name === "choosing")
-        await expect(page.getByRole("button", { name: "Choose hearts as hukum" })).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Choose hearts as hukum" }),
+        ).toBeVisible();
       if (s.name === "trick-complete")
         await expect(page.locator(".played-card")).toHaveCount(4);
       if (s.name === "complete")
-        await expect(page.getByRole("button", { name: "Deal again" })).toBeVisible();
-      await page.screenshot({ path: `.impeccable/review/${v.width}x${v.height}-${s.name}.png` });
+        await expect(
+          page.getByRole("button", { name: "Deal again" }),
+        ).toBeVisible();
+      await page.screenshot({
+        path: `.impeccable/review/${v.width}x${v.height}-${s.name}.png`,
+      });
       await checkLayout(page, `${v.width}x${v.height} ${s.name}`);
     }
   });
@@ -273,9 +310,18 @@ test("simulated safe areas keep controls clear of notches and home indicators", 
 }) => {
   await page.clock.install();
   const cases = [
-    { view: { width: 390, height: 844 }, safe: { top: 47, right: 0, bottom: 34, left: 0 } },
-    { view: { width: 844, height: 390 }, safe: { top: 0, right: 47, bottom: 21, left: 47 } },
-    { view: { width: 932, height: 430 }, safe: { top: 0, right: 59, bottom: 21, left: 59 } },
+    {
+      view: { width: 390, height: 844 },
+      safe: { top: 47, right: 0, bottom: 34, left: 0 },
+    },
+    {
+      view: { width: 844, height: 390 },
+      safe: { top: 0, right: 47, bottom: 21, left: 47 },
+    },
+    {
+      view: { width: 932, height: 430 },
+      safe: { top: 0, right: 59, bottom: 21, left: 59 },
+    },
   ];
   for (const { view, safe } of cases) {
     await page.setViewportSize(view);
@@ -284,10 +330,18 @@ test("simulated safe areas keep controls clear of notches and home indicators", 
       await page.addStyleTag({
         content: `:root{--safe-top:${safe.top}px;--safe-right:${safe.right}px;--safe-bottom:${safe.bottom}px;--safe-left:${safe.left}px}`,
       });
-      await checkLayout(page, `${view.width}x${view.height} safe ${s.name}`, safe);
+      await checkLayout(
+        page,
+        `${view.width}x${view.height} safe ${s.name}`,
+        safe,
+      );
     }
-    const play = await page.getByRole("button", { name: "Deal again" }).boundingBox();
-    expect(play!.y + play!.height).toBeLessThanOrEqual(view.height - safe.bottom);
+    const play = await page
+      .getByRole("button", { name: "Deal again" })
+      .boundingBox();
+    expect(play!.y + play!.height).toBeLessThanOrEqual(
+      view.height - safe.bottom,
+    );
   }
 });
 test("plays an entire deal through the interface and shows the result", async ({
@@ -339,4 +393,22 @@ test("plays an entire deal through the interface and shows the result", async ({
     path: ".impeccable/review/result-mobile.png",
     fullPage: true,
   });
+});
+
+test("home screen on a 320x568 phone stacks without overlapping", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await load(page, null);
+  const boxes = await page.evaluate(() =>
+    [".bar", ".hero-cards", ".home-copy", ".home-controls"].map((q) => {
+      const r = document.querySelector(q)!.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    }),
+  );
+  for (let i = 1; i < boxes.length; i++)
+    expect(
+      boxes[i].top,
+      `block ${i} starts below block ${i - 1}`,
+    ).toBeGreaterThanOrEqual(boxes[i - 1].bottom - 1);
 });

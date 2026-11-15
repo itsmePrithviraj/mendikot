@@ -54,6 +54,10 @@
 .hand {
   padding: var(--s2) var(--s2) 0;
 }
+/* The hand only takes focus briefly after a keyboard play; cards show their own ring. */
+.hand:focus {
+  outline: none;
+}
 .actions {
   min-height: 72px;
   padding: var(--s3) var(--s4);
@@ -127,8 +131,8 @@
     --table-w: min(100%, 1280px, calc((100dvh - 96px) * 1.62));
     grid-template-rows: 60px minmax(0, 1fr);
     justify-items: center;
-    padding: var(--safe-top) calc(var(--safe-right) + var(--s5)) calc(var(--safe-bottom) + var(--s5))
-      calc(var(--safe-left) + var(--s5));
+    padding: var(--safe-top) calc(var(--safe-right) + var(--s5))
+      calc(var(--safe-bottom) + var(--s5)) calc(var(--safe-left) + var(--s5));
     background:
       radial-gradient(ellipse 70% 60% at 50% 45%, #143a31, transparent 75%),
       var(--room);

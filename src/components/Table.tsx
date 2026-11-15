@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
+import type { PlayerGame } from "../game/view";
 import { History } from "lucide-react";
-import type { Game, Suit } from "../game/engine";
+import type { Suit } from "../game/engine";
 import { winnerOf } from "../game/engine";
 import type { Stage, Status } from "../state/status";
-import { nameOf } from "../state/names";
+import { useTableIdentity } from "../state/tableIdentity";
 import { CardBack, Sheep, SuitGlyph } from "./cards";
 import { ChoosePanel } from "./panels/ChoosePanel";
 import { ResultPanel } from "./panels/ResultPanel";
@@ -17,15 +19,20 @@ export function Table({
   onAgain,
   onChangeMode,
   onLastTrick,
+  resultActions,
+  interactionDisabled = false,
 }: {
-  game: Game;
+  game: PlayerGame;
   stage: Stage;
   status: Status;
   onChoose: (suit: Suit) => void;
   onAgain: () => void;
   onChangeMode: () => void;
   onLastTrick: () => void;
+  resultActions?: ReactNode;
+  interactionDisabled?: boolean;
 }) {
+  const { names } = useTableIdentity();
   const ready = stage === "ready";
   const completeTrick = game.phase === "trick-complete";
   const winner = completeTrick ? winnerOf(game.trick, game.trump) : null;
@@ -41,18 +48,31 @@ export function Table({
       </div>
     );
   else if (game.phase === "complete")
-    centre = <ResultPanel game={game} onAgain={onAgain} onChangeMode={onChangeMode} />;
-  else if (choosing && game.turn === 0) centre = <ChoosePanel onChoose={onChoose} />;
+    centre = (
+      <ResultPanel
+        actions={resultActions}
+        game={game}
+        onAgain={onAgain}
+        onChangeMode={onChangeMode}
+      />
+    );
+  else if (choosing && game.turn === 0)
+    centre = (
+      <fieldset className="choose-controls" disabled={interactionDisabled}>
+        <ChoosePanel onChoose={onChoose} />
+      </fieldset>
+    );
   else if (choosing)
     centre = (
       <p className="table-note">
         <Sheep />
-        {nameOf(game.turn)} is choosing hukum
+        {names[game.turn]} is choosing hukum
         <br />
         from five cards…
       </p>
     );
-  else if (game.trick.length) centre = <Trick plays={game.trick} winner={winner} />;
+  else if (game.trick.length)
+    centre = <Trick plays={game.trick} winner={winner} />;
   else if (game.phase === "playing" && ready)
     centre = (
       <p className="table-note quiet">
@@ -71,7 +91,11 @@ export function Table({
         </span>
       )}
       {game.lastTrick && game.phase !== "complete" && (
-        <button className="chip last-trick-btn" onClick={onLastTrick} aria-label="Last trick">
+        <button
+          className="chip last-trick-btn"
+          onClick={onLastTrick}
+          aria-label="Last trick"
+        >
           <History strokeWidth={1.75} />
           <span className="chip-label">Last trick</span>
         </button>
@@ -80,8 +104,13 @@ export function Table({
         <Seat
           key={seat}
           seat={seat}
-          cards={game.hands[seat].length}
-          turn={ready && game.turn === seat && game.phase !== "complete" && !completeTrick}
+          cards={game.handCounts[seat]}
+          turn={
+            ready &&
+            game.turn === seat &&
+            game.phase !== "complete" &&
+            !completeTrick
+          }
           winner={winner === seat}
         />
       ))}

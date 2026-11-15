@@ -33,7 +33,11 @@ export function Sheet({
         <div className="sheet-inner">
           <header className="sheet-head">
             <h2 id="sheet-title">{title}</h2>
-            <button className="icon-btn sheet-close" aria-label="Close" onClick={onClose}>
+            <button
+              className="icon-btn sheet-close"
+              aria-label="Close"
+              onClick={onClose}
+            >
               <X strokeWidth={1.75} />
             </button>
           </header>

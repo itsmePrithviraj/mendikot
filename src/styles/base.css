@@ -111,7 +111,12 @@ svg {
 }
 .btn-primary {
   color: #2a2010;
-  background: linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, #c4a467);
+  background: linear-gradient(
+    180deg,
+    var(--brass-bright),
+    var(--brass) 60%,
+    #c4a467
+  );
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.45),
     0 1px 0 rgb(0 0 0 / 0.25),

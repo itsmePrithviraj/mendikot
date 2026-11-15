@@ -7,6 +7,12 @@ dist/
 coverage/
 playwright-report/
 test-results/
+test-results-online/
+test-results-online-restart/
 *.tsbuildinfo
 .impeccable/review/
 .impeccable/config.local.json
+.wrangler/
+.dev.vars
+.dev.vars.*
+worker-configuration.d.ts

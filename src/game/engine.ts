@@ -161,10 +161,10 @@ export function collectTrick(game: Game): Game {
     phase: game.hands.every((h) => h.length === 0) ? "complete" : "playing",
   };
 }
-export const tens = (game: Game, team: Team) =>
+export const tens = (game: Pick<Game, "captured">, team: Team) =>
   game.captured[team].filter((c) => c.rank === 10);
 export function resultOf(
-  game: Game,
+  game: Pick<Game, "phase" | "captured" | "tricks">,
 ): { winner: Team; coat: boolean; whitewash: boolean } | null {
   if (game.phase !== "complete") return null;
   const ours = tens(game, 0).length,

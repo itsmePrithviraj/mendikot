@@ -3,22 +3,29 @@ import { ModePicker } from "../panels/ModePicker";
 
 export function NewDealSheet({
   mode,
+  finished,
   onMode,
   onKeep,
   onDeal,
 }: {
   mode: Mode;
+  /** The current deal is over, so a new one ends nothing. */
+  finished: boolean;
   onMode: (mode: Mode) => void;
   onKeep: () => void;
   onDeal: () => void;
 }) {
   return (
     <>
-      <p>This ends the current practice deal.</p>
+      <p>
+        {finished
+          ? "Pick how hukum is set for the next deal."
+          : "This ends the current practice deal."}
+      </p>
       <ModePicker mode={mode} onChange={onMode} />
       <div className="sheet-actions">
         <button className="btn btn-quiet" onClick={onKeep}>
-          Keep playing
+          {finished ? "Not yet" : "Keep playing"}
         </button>
         <button className="btn btn-primary" onClick={onDeal}>
           Shuffle &amp; deal

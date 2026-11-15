@@ -8,7 +8,13 @@ const crest = (rank: number) => (rank === 13 ? "k" : rank === 12 ? "q" : "j");
 function Index({ label, suit }: { label: string; suit: Suit }) {
   return (
     <>
-      <text x="34" y="61" className={`rank ${label === "10" ? "ten" : ""}`} textAnchor="middle" fontSize="56">
+      <text
+        x="34"
+        y="61"
+        className={`rank ${label === "10" ? "ten" : ""}`}
+        textAnchor="middle"
+        fontSize="56"
+      >
         {label}
       </text>
       <use href={`#s-${suit}`} x="19" y="70" width="30" height="30" />
@@ -29,7 +35,13 @@ function Pips({ card }: { card: Card }) {
             <circle cx="125" cy="175" r="72" className="ink-line" />
           </>
         )}
-        <use href={href} x={125 - size / 2} y={175 - size / 2} width={size} height={size} />
+        <use
+          href={href}
+          x={125 - size / 2}
+          y={175 - size / 2}
+          width={size}
+          height={size}
+        />
       </g>
     );
   }
@@ -43,8 +55,22 @@ function Pips({ card }: { card: Card }) {
     );
     return (
       <g className="court">
-        <rect x="50" y="72" width="150" height="206" rx="10" className="court-panel" />
-        <rect x="56" y="78" width="138" height="194" rx="6" className="ink-line faint" />
+        <rect
+          x="50"
+          y="72"
+          width="150"
+          height="206"
+          rx="10"
+          className="court-panel"
+        />
+        <rect
+          x="56"
+          y="78"
+          width="138"
+          height="194"
+          rx="6"
+          className="ink-line faint"
+        />
         <g className="pip">
           {side}
           <g transform="rotate(180 125 175)">{side}</g>
@@ -78,10 +104,21 @@ function Pips({ card }: { card: Card }) {
 }
 
 function CompactCentre({ card }: { card: Card }) {
-  if (card.rank === 10) return <use href="#sheep" x="84" y="192" width="148" height="130" />;
+  if (card.rank === 10)
+    return <use href="#sheep" x="84" y="192" width="148" height="130" />;
   if (card.rank > 10)
-    return <use href={`#crest-${crest(card.rank)}`} x="104" y="190" width="128" height="128" />;
-  return <use href={`#s-${card.suit}`} x="104" y="192" width="128" height="128" />;
+    return (
+      <use
+        href={`#crest-${crest(card.rank)}`}
+        x="104"
+        y="190"
+        width="128"
+        height="128"
+      />
+    );
+  return (
+    <use href={`#s-${card.suit}`} x="104" y="192" width="128" height="128" />
+  );
 }
 
 /** A playing card drawn entirely from the shared sprite. Two compositions
@@ -96,10 +133,21 @@ export const CardFace = memo(function CardFace({
 }) {
   const label = rankLabel(card.rank);
   return (
-    <span className={`card face ${card.suit} ${className}`} role="img" aria-label={cardLabel(card)}>
+    <span
+      className={`card face ${card.suit} ${className}`}
+      role="img"
+      aria-label={cardLabel(card)}
+    >
       <svg viewBox="0 0 250 350" aria-hidden="true" focusable="false">
         <rect width="250" height="350" rx="16" className="card-paper" />
-        <rect x="9" y="9" width="232" height="332" rx="10" className="card-hairline" />
+        <rect
+          x="9"
+          y="9"
+          width="232"
+          height="332"
+          rx="10"
+          className="card-hairline"
+        />
         <g className="face-full">
           <Index label={label} suit={card.suit} />
           <g transform="rotate(180 125 175)">
@@ -108,7 +156,13 @@ export const CardFace = memo(function CardFace({
           <Pips card={card} />
         </g>
         <g className="face-compact">
-          <text x="62" y="104" className={`rank ${label === "10" ? "ten" : ""}`} textAnchor="middle" fontSize="104">
+          <text
+            x="62"
+            y="104"
+            className={`rank ${label === "10" ? "ten" : ""}`}
+            textAnchor="middle"
+            fontSize="104"
+          >
             {label}
           </text>
           <use href={`#s-${card.suit}`} x="30" y="120" width="62" height="62" />
@@ -121,7 +175,11 @@ export const CardFace = memo(function CardFace({
   );
 });
 
-export const CardBack = memo(function CardBack({ className = "" }: { className?: string }) {
+export const CardBack = memo(function CardBack({
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
     <span className={`card back ${className}`} aria-hidden="true">
       <svg viewBox="0 0 250 350" focusable="false">

@@ -2,25 +2,29 @@
 
 ## Milestone 1 — playable PWA prototype
 
-- [ ] Repository, lockfile, build/test CI, product and design documentation
-- [ ] Pure rules engine: 52-card shuffle, legal play, cut hukum, trick winner, tens, ties
-- [ ] One human + three bots; complete deals, results and rematches
-- [ ] Portrait two-row hand, landscape single row, large-screen table
-- [ ] Ivory card faces with 10 + suit + sheep; patterned backs
-- [ ] Shuffle, distribution, selection, play and collection animations; reduced motion
-- [ ] Local save/restore, accessible controls, rules and settings
-- [ ] Installable PWA, offline practice, deferred app updates
-- [ ] Automated game tests, responsive browser checks, refresh/rotation/offline checks
+- [x] Repository, lockfile, build/test CI, product and design documentation
+- [x] Pure rules engine: 52-card shuffle, legal play, cut hukum, trick winner, tens, ties
+- [x] One human + three bots; complete deals, results and rematches
+- [x] Portrait two-row hand, landscape single row, large-screen table
+- [x] Ivory card faces with 10 + suit + sheep; patterned backs
+- [x] Shuffle, distribution, selection, play and collection animations; reduced motion
+- [x] Local save/restore, accessible controls, rules and settings
+- [x] Installable PWA, offline practice, deferred app updates
+- [x] Automated game tests, responsive browser checks, refresh/rotation/offline checks
 
-UI revamp (branch `ui-revamp`): new token system and three layout modes, redrawn SVG card faces/back/courts, sheep medallion on 10s, bottom-sheet menu and rules, haptics preference, regenerated icons, and an e2e geometry matrix over nine viewports.
+The UI revamp (PR #5) added the token system and three layout modes, redrawn SVG card faces, backs and courts, the sheep medallion on 10s, bottom-sheet menu and rules, a haptics preference, regenerated icons, and an e2e geometry matrix over nine viewports.
 
 ## Milestone 2 — play with friends
 
-- [ ] Confirm house rules and implement chosen hukum variations
-- [ ] Authoritative server, private room codes, player seats and teams
-- [ ] Private per-player state, legal-command validation and idempotency
-- [ ] Reconnection, turn timeout policy and abandoned-game handling
-- [ ] Four-device end-to-end playtests and abuse controls
+- [x] Implement the existing cut and choose hukum rules online
+- [x] Authoritative server, private room codes, player seats and teams
+- [x] Private per-player state, legal-command validation and idempotency
+- [x] Reconnection, turn timeout policy and abandoned-game handling
+- [x] Automated four-browser deals, runtime restart recovery, and basic abuse controls
+- [x] Cloudflare account authorization and public deployment (4 November 2026)
+- [ ] Four-device end-to-end playtests on the deployed service
+
+See [the multiplayer walkthrough](MULTIPLAYER.md) for architecture, local testing, and deployment steps.
 
 ## Milestone 3 — mobile distribution and polish
 

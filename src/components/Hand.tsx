@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { CSSProperties, KeyboardEvent } from "react";
 import type { Card } from "../game/engine";
 import { HandCard } from "./cards";
@@ -27,10 +28,23 @@ export function Hand({
   onSelect: (card: Card) => void;
   onPlay: () => void;
 }) {
+  const handRef = useRef<HTMLDivElement>(null);
+  // After a keyboard play the hand itself holds focus (the played card is gone
+  // and the rest are disabled). Give it back to a card when it is our turn.
+  useEffect(() => {
+    const hand = handRef.current;
+    if (disabled || !hand || document.activeElement !== hand) return;
+    const first =
+      hand.querySelector<HTMLButtonElement>("button.legal:not(:disabled)") ??
+      hand.querySelector<HTMLButtonElement>("button:not(:disabled)");
+    first?.focus();
+  }, [disabled]);
+
   function onKeyDown(card: Card, e: KeyboardEvent<HTMLButtonElement>) {
     if (e.key === "Enter" && selected === card.id && canPlay) {
       e.preventDefault();
       onPlay();
+      handRef.current?.focus();
       return;
     }
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -49,7 +63,10 @@ export function Hand({
   return (
     <div
       className={`hand${dealing ? " dealing" : ""}${cards.length <= 5 ? " five-cards" : ""}`}
+      ref={handRef}
+      role="group"
       aria-label="Your cards"
+      tabIndex={-1}
       style={{ "--count": cards.length } as CSSProperties}
     >
       {cards.map((card, index) => {
