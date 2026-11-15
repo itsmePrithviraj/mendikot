@@ -21,7 +21,7 @@ npm run check:server
 npm run dev:online
 ```
 
-Open http://localhost:8787 and choose **Play with friends**. `dev:online` builds the frontend, then runs Cloudflare's local runtime through Wrangler. No Cloudflare login is needed for this local server. Wrangler watches backend changes; run `npm run build` after changing frontend files. `npm run dev` remains the hot-reloading offline-practice frontend on Vite.
+Open http://localhost:8787 and choose **Create a room** or **Join a room**. `dev:online` builds the frontend, then runs Cloudflare's local runtime through Wrangler. No Cloudflare login is needed for this local server. Wrangler watches backend changes; run `npm run build` after changing frontend files. `npm run dev` remains the hot-reloading offline-practice frontend on Vite.
 
 For four players on one computer, use four separate browser profiles or isolated browser contexts. Tabs in the same browser profile share a session cookie and therefore represent the same player, not four players. Opening the same seat in another tab replaces its previous connection rather than creating a second player.
 
@@ -91,7 +91,9 @@ The frontend never declares a move successful before the server accepts it. It d
 
 ## Stage 5: timers, disconnections, and storage
 
-A **Durable Object alarm** is a persisted server-side wake-up time. It runs independently of whether a player's tab is visible. We use alarms to collect completed tricks after 1.7 seconds, release abandoned seats, and expire inactive rooms.
+A **Durable Object alarm** is a persisted server-side wake-up time. It runs independently of whether a player's tab is visible. We use alarms to collect completed tricks after 1.7 seconds, play bot turns, release abandoned seats, and expire inactive rooms.
+
+**Bots.** Between deals the host can fill every empty seat with a bot (`{ type: "bot", add: true }`) or remove one (`{ type: "bot", add: false, seat }`). Bots are ordinary seats flagged `bot`: always present and ready, never signed in, and reported to clients with `bot: true` so the interface labels them. When it is a bot's turn, `botAt` is set one second ahead (longer straight after a deal) and saved with the room; the alarm's `advanceTimers` plays the bot's move with the same heuristics as solo play. Bots pause while any person is disconnected. A person joining a full room takes a bot's seat, a person may also swap into a bot's seat in the lobby, and when the last person leaves the bots go too. The host's **Start deal** counts as the host's own ready.
 
 The next required deadline (`nextDeadline`) is saved atomically with the room snapshot. When the alarm fires, `advanceTimers` applies only what is due; a retried alarm finds the trick already collected and does nothing.
 

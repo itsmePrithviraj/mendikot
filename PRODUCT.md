@@ -20,11 +20,11 @@ Capture the four tens with a partner. Make the traditional game readable, tactil
 
 ## Operating Context
 
-Portrait and landscape must both work. Device rotation changes layout without resetting play. Users can bookmark and install the PWA. Offline practice uses one human and three explicitly labeled bots. Online private rooms use four humans, invite links/codes, guest sessions, and a readiness lobby.
+Portrait and landscape must both work. Device rotation changes layout without resetting play. Users can bookmark and install the PWA. The start screen offers solo play, creating a room, or joining one. Solo play uses one human and three explicitly labeled bots. Online private rooms seat four, with invite links/codes, guest sessions and a readiness lobby; the host may fill empty seats with explicitly labeled server-run bots, and a joining friend takes a bot's seat.
 
 ## Capabilities and Constraints
 
-52 cards, 13 per player; partners opposite; follow suit when possible; highest trump otherwise highest led suit wins. Tens determine winner, tricks break a 2–2 tie. Confirmed modes: cut hukum (first off-suit card establishes trump), and choose hukum (deal five cards per player, designated player announces trump, then distribute eight remaining cards per player). Chosen hukum is public; hidden/reveal variants are not requested. No wagers or invented online players. Online rooms have guest session authentication, private hands, persisted room snapshots, and a two-minute reconnection grace period. Native binaries, account login, matchmaking, bot-filled online seats, and permanent match history are not included.
+52 cards, 13 per player; partners opposite; follow suit when possible; highest trump otherwise highest led suit wins. Tens determine winner, tricks (called "sheep" at this table: "1 sheep", "4 sheeps") break a 2–2 tie. Confirmed modes: cut hukum (first off-suit card establishes trump), and choose hukum (deal five cards per player, designated player announces trump, then distribute eight remaining cards per player). Chosen hukum is public; hidden/reveal variants are not requested. No wagers; online bots are always labeled as bots. Online rooms have guest session authentication, private hands, persisted room snapshots, and a two-minute reconnection grace period. Native binaries, account login, matchmaking and permanent match history are not included.
 
 ## Brand Commitments
 
