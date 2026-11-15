@@ -204,20 +204,28 @@ test("authentication, origin protection, duplicate moves, replacement tabs and l
         body: JSON.stringify({ name: "x".repeat(4096), mode: "cut" }),
       }).then((r) => r.status),
     );
-    expect(res).toBe(400);
+    // Oversized bodies are refused by the Worker before they reach a room.
+    expect(res).toBe(413);
     await readyAndStart(pages);
-    // A second tab in the same browser reclaims the same seat; the original stops retrying.
+    // A second tab in the same browser goes straight back to the seat from the
+    // invite link; the original stops retrying until asked to take it back.
     const replacement = await users[0].context.newPage();
     await replacement.goto(`/?room=${code}`);
-    await replacement.getByLabel("Your name").fill("Same person");
+    await connected(replacement);
+    const replacedIn = async (page: Page) =>
+      expect(page.locator(".online-app")).toHaveAttribute(
+        "data-connection",
+        "replaced",
+      );
+    await replacedIn(pages[0]);
+    await pages[0].getByRole("button", { name: "Play here instead" }).click();
+    await connected(pages[0]);
+    await replacedIn(replacement);
     await replacement
-      .getByRole("button", { name: "Join room", exact: true })
+      .getByRole("button", { name: "Play here instead" })
       .click();
     await connected(replacement);
-    await expect(pages[0].locator(".online-app")).toHaveAttribute(
-      "data-connection",
-      "replaced",
-    );
+    await replacedIn(pages[0]);
     expect((await snapshot(replacement, code)).yourId).toBe(
       (await snapshot(pages[0], code)).yourId,
     );

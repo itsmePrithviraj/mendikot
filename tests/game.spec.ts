@@ -394,3 +394,21 @@ test("plays an entire deal through the interface and shows the result", async ({
     fullPage: true,
   });
 });
+
+test("home screen on a 320x568 phone stacks without overlapping", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await load(page, null);
+  const boxes = await page.evaluate(() =>
+    [".bar", ".hero-cards", ".home-copy", ".home-controls"].map((q) => {
+      const r = document.querySelector(q)!.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    }),
+  );
+  for (let i = 1; i < boxes.length; i++)
+    expect(
+      boxes[i].top,
+      `block ${i} starts below block ${i - 1}`,
+    ).toBeGreaterThanOrEqual(boxes[i - 1].bottom - 1);
+});

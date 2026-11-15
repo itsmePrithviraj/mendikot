@@ -278,7 +278,8 @@ describe("authoritative multiplayer rooms", () => {
     room.game = newGame();
     const away = setConnected(room, "player-2", false, 1_000);
     expect(away.players[2]!.disconnectedAt).toBe(1_000);
-    expect(away.players[2]!.ready).toBe(false);
+    // Readiness survives a refresh; start still requires a live connection.
+    expect(away.players[2]!.ready).toBe(true);
     expect(nextDeadline(away)).toBe(1_000 + RECONNECT_MS);
     expect(advanceTimers(away, 1_000 + RECONNECT_MS - 1)).toBe(away);
     const back = setConnected(away, "player-2", true, 2_000);
@@ -344,6 +345,92 @@ describe("authoritative multiplayer rooms", () => {
     expect(() => joinRoom(joined, { ...newcomer, id: "fifth" })).toThrow(
       /four players/,
     );
+  });
+  it("starts a newcomer in the lobby, not on someone else's result", () => {
+    const { room, connected } = fixture();
+    room.game = { ...newGame(), phase: "complete" };
+    const left = applyCommand(
+      room,
+      "player-3",
+      command(room.revision, { type: "leave" }),
+      connected,
+      0,
+    );
+    expect(left.game).toBeNull();
+    const ended = { ...room, players: [...room.players.slice(0, 3), null] };
+    ended.endedReason = "Friend 3 left. This deal has ended without a winner.";
+    const joined = joinRoom(ended, {
+      id: "player-new",
+      name: "New",
+      tokenHash: "secret-new",
+      ready: false,
+      disconnectedAt: 0,
+    });
+    expect(joined.game).toBeNull();
+    expect(joined.endedReason).toBeNull();
+  });
+  it("keeps rotating the dealer after an abandoned deal", () => {
+    const { room, connected } = fixture();
+    let next = applyCommand(
+      room,
+      "player-0",
+      command(room.revision, { type: "start" }),
+      connected,
+      0,
+    );
+    expect(next.game!.dealer).toBe(3);
+    next = applyCommand(
+      next,
+      "player-3",
+      command(next.revision, { type: "leave" }),
+      connected,
+      0,
+    );
+    next = joinRoom(next, {
+      id: "player-3",
+      name: "Back",
+      tokenHash: "secret-3",
+      ready: true,
+      disconnectedAt: null,
+    });
+    for (const p of next.players)
+      next = applyCommand(
+        next,
+        p!.id,
+        command(next.revision, { type: "ready", ready: true }),
+        connected,
+        0,
+      );
+    next = applyCommand(
+      next,
+      "player-0",
+      command(next.revision, { type: "start" }),
+      connected,
+      0,
+    );
+    expect(next.game!.dealer).toBe(0);
+  });
+  it("explains why a host cannot change the mode during a deal", () => {
+    const { room, connected } = fixture();
+    room.game = newGame();
+    expect(() =>
+      applyCommand(
+        room,
+        "player-0",
+        command(room.revision, { type: "mode", mode: "choose" }),
+        connected,
+        0,
+      ),
+    ).toThrow(/between deals/);
+    expect(() =>
+      applyCommand(
+        room,
+        "player-1",
+        command(room.revision, { type: "mode", mode: "choose" }),
+        connected,
+        0,
+      ),
+    ).toThrow(/Only the host/);
   });
   it("rejects malformed commands and unsafe names", () => {
     for (const value of [

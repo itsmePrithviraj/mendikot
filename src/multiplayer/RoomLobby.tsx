@@ -8,11 +8,17 @@ import { invitedRoom } from "./useRoom";
 /** Create-or-join form shown before the player has a seat. */
 export function RoomEntry({
   busy,
+  notice,
   onEnter,
+  onEdit,
   onBack,
 }: {
   busy: boolean;
+  /** A confirmation such as "You left room ABCD2345." */
+  notice: string;
   onEnter: (name: string, mode: Mode, code?: string) => void;
+  /** Called when the player edits the form, to clear a stale error. */
+  onEdit: () => void;
   onBack: () => void;
 }) {
   const [name, setName] = useState("");
@@ -21,6 +27,11 @@ export function RoomEntry({
   const [joining, setJoining] = useState(() => !!invitedRoom());
   return (
     <section className="room-panel" aria-labelledby="room-entry-title">
+      {notice && (
+        <p className="room-note" role="status">
+          {notice}
+        </p>
+      )}
       <div className="room-intro">
         <Users size={32} strokeWidth={1.5} aria-hidden="true" />
         <h1 id="room-entry-title">A table for friends.</h1>
@@ -46,6 +57,7 @@ export function RoomEntry({
       </div>
       <form
         className="room-form"
+        onChange={onEdit}
         onSubmit={(event) => {
           event.preventDefault();
           onEnter(name.trim(), mode, joining ? code : undefined);
@@ -93,7 +105,9 @@ export function RoomEntry({
         </button>
       </form>
       <p className="room-note">
-        No account needed. Share the room link with three friends.
+        {joining
+          ? "No account needed. Ask the host for the room link or code."
+          : "No account needed. Share the room link with three friends."}
       </p>
       <button className="btn btn-ghost" onClick={onBack} disabled={busy}>
         Back to practice

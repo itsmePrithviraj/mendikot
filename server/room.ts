@@ -6,7 +6,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { CloseCode } from "../src/multiplayer/protocol";
 import type { ServerMessage } from "../src/multiplayer/protocol";
-import { json, MAX_MESSAGE_BYTES, readJsonObject } from "./http";
+import { byteLength, json, MAX_MESSAGE_BYTES, readJsonObject } from "./http";
 import {
   advanceTimers,
   applyCommand,
@@ -96,11 +96,12 @@ export class GameRoom extends DurableObject<Env> {
     }
   }
 
-  private broadcast() {
+  /** Sends each socket (or just `only`) its owner's current private snapshot. */
+  private broadcast(only?: WebSocket) {
     if (!this.room) return;
     const room = this.room;
     const connected = this.connected();
-    for (const socket of this.ctx.getWebSockets()) {
+    for (const socket of only ? [only] : this.ctx.getWebSockets()) {
       const { playerId } = attachmentOf(socket);
       if (room.players.some((p) => p?.id === playerId))
         this.send(socket, {
@@ -141,6 +142,10 @@ export class GameRoom extends DurableObject<Env> {
           { error: errorMessage(error, "Unable to open this room.") },
           error instanceof RoomError ? error.status : 400,
         );
+      } finally {
+        // Never leave a request body unread behind an early response.
+        if (request.body && !request.bodyUsed)
+          await request.body.cancel().catch(() => {});
       }
     });
   }
@@ -228,8 +233,7 @@ export class GameRoom extends DurableObject<Env> {
           socket.close(CloseCode.expired, "Room expired.");
           return;
         }
-        if (typeof message !== "string" || message.length > MAX_MESSAGE_BYTES)
-          throw new RoomError("Invalid message.");
+        // Every message counts against the budget, including invalid ones.
         const attachment = attachmentOf(socket);
         if (!this.withinBudget(socket, attachment)) {
           socket.close(
@@ -238,6 +242,11 @@ export class GameRoom extends DurableObject<Env> {
           );
           return;
         }
+        if (
+          typeof message !== "string" ||
+          byteLength(message) > MAX_MESSAGE_BYTES
+        )
+          throw new RoomError("Invalid message.");
         let parsed: unknown;
         try {
           parsed = JSON.parse(message);
@@ -267,7 +276,7 @@ export class GameRoom extends DurableObject<Env> {
           message: errorMessage(error, "Could not apply that action."),
         });
         // Resync the sender in case its snapshot was stale.
-        this.broadcast();
+        this.broadcast(socket);
       }
     });
   }

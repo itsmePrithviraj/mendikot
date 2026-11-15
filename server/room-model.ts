@@ -51,6 +51,8 @@ export interface RoomState {
   collectAt: number | null;
   /** Why the last deal ended without a winner, shown in the lobby. */
   endedReason: string | null;
+  /** Dealer of the most recent deal, so rotation survives abandoned deals. */
+  lastDealer?: Seat;
   /** Recent accepted command IDs per player ID. */
   receipts: Record<string, string[]>;
 }
@@ -129,6 +131,14 @@ function clearReadiness(draft: RoomState) {
   for (const p of draft.players) if (p) p.ready = false;
 }
 
+/**
+ * A finished deal's result belongs to the players who played it. Once the
+ * roster changes, drop it so newcomers start in the lobby.
+ */
+function discardFinishedDeal(draft: RoomState) {
+  if (draft.game?.phase === "complete") draft.game = null;
+}
+
 /** Releases a seat on a draft. An unfinished deal ends without a winner. */
 function release(draft: RoomState, id: string, reason: string) {
   if (isDealActive(draft)) {
@@ -136,6 +146,7 @@ function release(draft: RoomState, id: string, reason: string) {
     draft.collectAt = null;
     draft.endedReason = reason;
   }
+  discardFinishedDeal(draft);
   draft.players = draft.players.map((p) => (p?.id === id ? null : p));
   delete draft.receipts[id];
   clearReadiness(draft);
@@ -152,10 +163,16 @@ export function joinRoom(room: RoomState, player: Player): RoomState {
   const draft = structuredClone(room);
   draft.players[seat] = player;
   draft.hostId ||= player.id;
+  // The newcomer was not part of whatever happened before.
+  discardFinishedDeal(draft);
+  draft.endedReason = null;
   return commit(draft, true);
 }
 
-/** Records a socket opening or closing. Losing a connection also clears readiness. */
+/**
+ * Records a socket opening or closing. Readiness survives a refresh; a deal
+ * still cannot start until everyone is connected.
+ */
 export function setConnected(
   room: RoomState,
   id: string,
@@ -167,7 +184,6 @@ export function setConnected(
   const draft = structuredClone(room);
   const player = draft.players[seat]!;
   player.disconnectedAt = connected ? null : now;
-  if (!connected) player.ready = false;
   return commit(draft, false);
 }
 
@@ -339,8 +355,8 @@ export function applyCommand(
       player.ready = action.ready;
       break;
     case "mode":
-      if (active || !host)
-        throw new RoomError("Only the host can change the mode between deals.");
+      if (!host) throw new RoomError("Only the host can change the mode.");
+      if (active) throw new RoomError("Change the mode between deals.");
       draft.mode = action.mode;
       clearReadiness(draft);
       setupChanged = true;
@@ -353,22 +369,25 @@ export function applyCommand(
       clearReadiness(draft);
       setupChanged = true;
       break;
-    case "start":
-      if (active || !host)
-        throw new RoomError("Only the host can start a new deal.");
+    case "start": {
+      if (!host) throw new RoomError("Only the host can start a new deal.");
+      if (active) throw new RoomError("Finish this deal first.");
       if (!draft.players.every((p) => p && p.ready && connected.has(p.id)))
         throw new RoomError("All four players must be connected and ready.");
-      // The first deal is dealt by seat 3, so seat 0 leads; then the dealer rotates.
+      // Seat 3 deals first, so seat 0 leads; after that the dealer rotates.
+      const previous = draft.lastDealer ?? draft.game?.dealer;
       draft.game = newGame(
         undefined,
-        draft.game ? nextSeat(draft.game.dealer) : 3,
+        previous === undefined ? 3 : nextSeat(previous),
         draft.mode,
       );
+      draft.lastDealer = draft.game.dealer;
       draft.endedReason = null;
       draft.collectAt = null;
       clearReadiness(draft);
       setupChanged = true;
       break;
+    }
     case "play":
     case "trump":
       if (!draft.game || !draft.players.every((p) => p && connected.has(p.id)))

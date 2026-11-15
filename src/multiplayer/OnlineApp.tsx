@@ -54,25 +54,52 @@ function identityOf(room: RoomSnapshot | null) {
   return { names, connected, online: true };
 }
 
+/** "1:05" until `deadline`. */
+function countdown(deadline: number, now: number) {
+  const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+/** Who the table is waiting for, e.g. "Dev" or "Dev and Mira". */
+function awayNames(room: RoomSnapshot | null) {
+  const away = room?.players.filter((p) => !p.connected) ?? [];
+  return away.map((p) => p.name).join(" and ");
+}
+
 /** Connection problems, pending actions and errors take over the status line. */
 function onlineStatus(
   base: Status,
+  room: RoomSnapshot | null,
   connection: Connection,
-  everyoneHere: boolean,
   pending: boolean,
   error: string,
+  now: number,
 ): Status {
+  const away = awayNames(room);
+  const deadline = room?.reconnectDeadline;
   const text =
     connection === "replaced"
       ? "Your seat is open in another tab."
       : connection !== "connected"
         ? "Reconnecting… Your seat is reserved."
-        : !everyoneHere
-          ? "Waiting for a friend to reconnect · up to 2 minutes"
+        : away
+          ? `Waiting for ${away} to reconnect${deadline ? ` · ${countdown(deadline, now)}` : "…"}`
           : pending
             ? "Confirming your action…"
             : error;
   return text ? { text, mine: false } : base;
+}
+
+/** The current time, ticking every second while `active`. */
+function useNow(active: boolean) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+  return now;
 }
 
 /** The online table: lobby, live game and results for one private room. */
@@ -98,7 +125,9 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
   const soundRef = useRef(sound);
   soundRef.current = sound;
   const active = !!game && game.phase !== "complete";
-  const showTable = !!game && (active || showResults);
+  const replaced = connection === "replaced";
+  // A replaced tab shows the room screen, where it can take the seat back.
+  const showTable = !!game && (active || showResults) && !replaced;
   const disabled = connection !== "connected" || pending;
   const everyoneHere =
     room?.players.length === 4 && room.players.every((p) => p.connected);
@@ -165,12 +194,14 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
     setSelected(null);
     tap(12);
   }
+  const now = useNow(!!room?.reconnectDeadline);
   const status = onlineStatus(
     statusOf(game, dealing ? "deal" : "ready", identity.names),
+    room,
     connection,
-    everyoneHere,
     pending,
     error,
+    now,
   );
 
   return (
@@ -258,18 +289,30 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                   {error}
                 </p>
               )}
-              {room?.endedReason && (
+              {room?.endedReason && !replaced && (
                 <p className="room-alert" role="status">
                   {room.endedReason}
                 </p>
               )}
-              {room ? (
+              {replaced ? (
+                <section className="room-panel">
+                  <h1>Playing in another tab.</h1>
+                  <p role="status">
+                    Your seat{room ? ` in room ${room.code}` : ""} is open in
+                    another tab or window.
+                  </p>
+                  <button className="btn btn-primary" onClick={client.reclaim}>
+                    Play here instead
+                  </button>
+                  <button className="btn btn-ghost" onClick={back}>
+                    Back to practice
+                  </button>
+                </section>
+              ) : room ? (
                 <>
                   {connection !== "connected" && (
                     <p className="room-note" role="status">
-                      {connection === "replaced"
-                        ? "This seat is active in another tab."
-                        : "Reconnecting to your table…"}
+                      Reconnecting to your table…
                     </p>
                   )}
                   <RoomLobby
@@ -283,11 +326,6 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
                         : undefined
                     }
                   />
-                  {connection === "replaced" && (
-                    <button className="btn btn-ghost" onClick={back}>
-                      Back to practice
-                    </button>
-                  )}
                 </>
               ) : code ? (
                 <section className="room-panel">
@@ -304,6 +342,8 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
               ) : (
                 <RoomEntry
                   busy={busy}
+                  notice={client.notice}
+                  onEdit={() => error && client.setError("")}
                   onEnter={(name, mode, code) =>
                     void client.enter(name, mode, code)
                   }
@@ -348,7 +388,7 @@ export function OnlineApp({ onBack }: { onBack: () => void }) {
             <RoomDetails
               room={room}
               error={error}
-              replaced={connection === "replaced"}
+              replaced={replaced}
               disabled={disabled}
               onLeave={leave}
               onBack={back}

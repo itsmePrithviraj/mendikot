@@ -15,9 +15,10 @@ export function Seat({
 }) {
   const { names, online, connected } = useTableIdentity();
   const name = names[seat];
+  const away = online && !connected[seat];
   return (
     <div
-      className={`seat seat-${seat}${turn ? " is-turn" : ""}${winner ? " is-winner" : ""}`}
+      className={`seat seat-${seat}${turn ? " is-turn" : ""}${winner ? " is-winner" : ""}${away ? " is-away" : ""}`}
     >
       <span className="avatar" aria-hidden="true">
         {name[0]}
@@ -29,11 +30,15 @@ export function Seat({
         <span className="seat-meta">
           {seat === PARTNER ? "Partner" : "Opponent"}
           <span className="seat-bot">
-            {online ? (connected[seat] ? "" : " · Away") : " · Bot"}
+            {online ? (away ? " · Away" : "") : " · Bot"}
           </span>
         </span>
       </span>
-      <span className="seat-cards tnum" aria-label={`${cards} cards`}>
+      <span
+        className="seat-cards tnum"
+        role="img"
+        aria-label={`${cards} ${cards === 1 ? "card" : "cards"}`}
+      >
         <span className="mini-back" aria-hidden="true" />
         {cards}
       </span>

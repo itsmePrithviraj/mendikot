@@ -20,7 +20,11 @@ function TeamScore({ game, team }: { game: PlayerGame; team: Team }) {
           </span>
         ))}
       </span>
-      <span className="team-tricks tnum" aria-label={`${tricks} tricks`}>
+      <span
+        className="team-tricks tnum"
+        role="img"
+        aria-label={`${tricks} ${tricks === 1 ? "trick" : "tricks"}`}
+      >
         {tricks}
         <small aria-hidden="true"> {tricks === 1 ? "trick" : "tricks"}</small>
       </span>
@@ -33,6 +37,7 @@ export function HukumChip({ game }: { game: PlayerGame }) {
     <div
       className={`hukum-chip ${game.trump ? "is-set" : "is-open"}`}
       key={game.trump ?? "open"}
+      role="img"
       aria-label={game.trump ? `Hukum: ${game.trump}` : "Hukum not yet set"}
     >
       {game.trump ? (

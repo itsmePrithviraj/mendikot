@@ -327,6 +327,14 @@
 .seat-2 .avatar {
   box-shadow: inset 0 0 0 1px rgb(210 181 122 / 0.5);
 }
+/* A disconnected online player: dimmed, with a dashed ring that survives portrait,
+   where the "Away" label is hidden. */
+.seat.is-away .avatar {
+  opacity: 0.5;
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  outline: 1.5px dashed var(--on-felt-2);
+  outline-offset: 2px;
+}
 .seat-copy {
   display: flex;
   flex-direction: column;
@@ -546,11 +554,13 @@
   gap: var(--s4);
   min-height: 0;
   height: 100%;
+  /* Short screens scroll rather than overlap. */
+  overflow-y: auto;
   padding: var(--s3) var(--s5) var(--s4);
   animation: rise-in var(--t-slow) var(--ease-out) both;
 }
 .home-hero {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -759,6 +769,20 @@
   }
   .home {
     padding-inline: var(--s4);
+  }
+}
+
+/* ---------- Short portrait phones (iPhone SE 1st gen) ---------- */
+@media (orientation: portrait) and (max-height: 600px) {
+  .home {
+    gap: var(--s3);
+    padding-top: var(--s2);
+  }
+  .home-hero {
+    gap: var(--s3);
+  }
+  .hero-cards {
+    --hero-w: 56px;
   }
 }
 

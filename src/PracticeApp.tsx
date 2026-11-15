@@ -261,6 +261,7 @@ export function PracticeApp({ onOnline }: { onOnline: () => void }) {
         {sheet === "new" && (
           <NewDealSheet
             mode={mode}
+            finished={game?.phase === "complete"}
             onMode={setMode}
             onKeep={() => setSheet(null)}
             onDeal={() => start()}

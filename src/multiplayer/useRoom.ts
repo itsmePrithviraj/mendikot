@@ -56,6 +56,9 @@ export type Connection =
   /** Another tab took over this seat; this view stops reconnecting. */
   | "replaced";
 
+/** An entry failure whose message is written for players. */
+class RoomEntryError extends Error {}
+
 const socketUrl = (code: string) => {
   const url = new URL(`/api/rooms/${code}/socket`, location.href);
   url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -71,6 +74,10 @@ export function useRoom() {
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const [connection, setConnection] = useState<Connection>("idle");
   const [error, setError] = useState("");
+  /** A non-error message for the entry screen, such as "You left the room." */
+  const [notice, setNotice] = useState("");
+  /** Bumped to reopen the connection after another tab took the seat. */
+  const [session, setSession] = useState(0);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(false);
   const socket = useRef<WebSocket | null>(null);
@@ -160,6 +167,7 @@ export function useRoom() {
               }
             } else if (message.type === "left") {
               forget();
+              setNotice(`You left room ${roomCode}.`);
             } else if (message.type === "ack" || message.type === "error") {
               if (message.id === inflight.current?.id) {
                 inflight.current = null;
@@ -178,9 +186,6 @@ export function useRoom() {
           pendingSince.current = 0;
           if (event.code === CloseCode.replaced) {
             setConnection("replaced");
-            setError(
-              "Your seat is open in another tab. Close this view or return there.",
-            );
             inflight.current = null;
             setPending(false);
           } else if (event.code === CloseCode.expired) {
@@ -221,7 +226,32 @@ export function useRoom() {
       if (socket.current === active) socket.current = null;
       active?.close(1000, "View closed.");
     };
-  }, [code, forget]);
+  }, [code, forget, session]);
+
+  // An invite link opened in a new tab or after a restart: if this browser
+  // already holds a seat in that room, go straight back to it.
+  useEffect(() => {
+    const invite = invitedRoom();
+    if (code || !ROOM_CODE.test(invite)) return;
+    const controller = new AbortController();
+    fetch(`/api/rooms/${invite}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) return;
+        remember(invite);
+        setCode(invite);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [code]);
+
+  /** Takes the seat back after another tab replaced this one. */
+  const reclaim = useCallback(() => {
+    setError("");
+    setSession((n) => n + 1);
+  }, []);
 
   /** Creates a room, or joins `joinCode` when given. */
   async function enter(name: string, mode: Mode, joinCode?: string) {
@@ -234,7 +264,12 @@ export function useRoom() {
     busyRef.current = true;
     setBusy(true);
     setError("");
+    setNotice("");
     try {
+      if (!navigator.onLine)
+        throw new RoomEntryError(
+          "You're offline. Connect to the internet to play with friends.",
+        );
       const res = await fetch(
         normalized ? `/api/rooms/${normalized}/join` : "/api/rooms",
         {
@@ -244,20 +279,22 @@ export function useRoom() {
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         },
       );
+      // Without the Worker (e.g. `npm run dev`), the request falls through to the app.
       if (!res.headers.get("Content-Type")?.includes("application/json"))
-        throw new Error(
-          "Multiplayer is unavailable here. Start the online server or open the hosted game.",
+        throw new RoomEntryError(
+          "Online play isn't available on this copy of the game. Open the hosted game to play with friends.",
         );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not join the room.");
+      if (!res.ok)
+        throw new RoomEntryError(data.error ?? "Could not join the room.");
       remember(data.code);
       setRoom(null);
       setCode(data.code);
     } catch (error) {
       setError(
-        error instanceof Error
+        error instanceof RoomEntryError
           ? error.message
-          : "Could not connect. Check your connection and try again.",
+          : "Could not reach the game. Check your connection and try again.",
       );
     } finally {
       busyRef.current = false;
@@ -294,10 +331,12 @@ export function useRoom() {
     connection,
     error,
     setError,
+    notice,
     busy,
     pending,
     enter,
     send,
     forget,
+    reclaim,
   };
 }
