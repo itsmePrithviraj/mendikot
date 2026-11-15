@@ -70,8 +70,9 @@ async function table(
   return { users, pages, code };
 }
 async function readyAndStart(pages: Page[]) {
+  // Guests ready up; the host's Start is their own ready.
   await Promise.all(
-    pages.map(async (page) => {
+    pages.slice(1).map(async (page) => {
       await page
         .getByRole("button", { name: "Ready to play", exact: true })
         .click();
@@ -418,11 +419,12 @@ test("entry and lobby fit desktop, portrait and landscape phones", async ({
             .evaluate((e) => e.scrollHeight <= e.clientHeight),
           `${name} portrait room screen fits without scrolling`,
         ).toBe(true);
+      // Landscape phones may scroll the lobby; portrait must not (above).
       await page
-        .getByRole("button", { name: "Ready to play", exact: true })
+        .getByRole("button", { name: "Start deal", exact: true })
         .scrollIntoViewIfNeeded();
       await expect(
-        page.getByRole("button", { name: "Ready to play", exact: true }),
+        page.getByRole("button", { name: "Start deal", exact: true }),
       ).toBeInViewport();
     }
   } finally {
@@ -461,9 +463,6 @@ test("a host alone fills the room with bots and plays a whole deal", async ({
         .locator(".room-scroll")
         .evaluate((e) => e.scrollHeight <= e.clientHeight),
     ).toBe(true);
-    await page
-      .getByRole("button", { name: "Ready to play", exact: true })
-      .click();
     await page.getByRole("button", { name: "Start deal" }).click();
     await expect(page.locator(".hand-card")).toHaveCount(13);
     await expect(page.locator(".seat-bot")).toHaveCount(3);

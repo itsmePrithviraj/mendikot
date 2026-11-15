@@ -117,15 +117,18 @@ export function RoomLobby({
   const mine = room.players.find((p) => p.id === room.yourId)!;
   const host = room.yourId === room.hostId;
   const hostName = room.players.find((p) => p.id === room.hostId)?.name;
+  // The host's Start is their own "ready".
   const allReady =
     room.players.length === 4 &&
-    room.players.every((p) => p.ready && p.connected);
+    room.players.every((p) => (p.ready || p.id === room.hostId) && p.connected);
   const link = new URL(`?room=${room.code}`, location.href).href;
   const who = (p: { id: string; name: string }) =>
     p.id === mine.id ? "you" : p.name;
   const people = room.players.filter((p) => !p.bot);
   const away = people.filter((p) => !p.connected).map(who);
-  const unready = people.filter((p) => !p.ready).map(who);
+  const unready = people
+    .filter((p) => !p.ready && p.id !== room.hostId)
+    .map(who);
   const missing = 4 - room.players.length;
   const waiting =
     missing > 0
@@ -225,10 +228,11 @@ export function RoomLobby({
                             ? "Bot"
                             : !player.connected
                               ? "Reconnecting…"
-                              : player.ready
-                                ? "Ready"
-                                : "Not ready"}
-                          {player.id === room.hostId ? " · Host" : ""}
+                              : player.id === room.hostId
+                                ? "Host · starts the deal"
+                                : player.ready
+                                  ? "Ready"
+                                  : "Not ready"}
                         </span>
                       </div>
                       {player.bot && host && (
@@ -296,7 +300,15 @@ export function RoomLobby({
           {waiting}
         </p>
         <div className="room-ready-actions">
-          {!mine.ready ? (
+          {host ? (
+            <button
+              className="btn btn-primary"
+              disabled={disabled || !allReady}
+              onClick={() => send({ type: "start" })}
+            >
+              Start deal
+            </button>
+          ) : !mine.ready ? (
             <button
               className="btn btn-primary"
               disabled={disabled}
@@ -305,24 +317,13 @@ export function RoomLobby({
               Ready to play
             </button>
           ) : (
-            <>
-              <button
-                className="btn btn-ghost"
-                disabled={disabled}
-                onClick={() => send({ type: "ready", ready: false })}
-              >
-                Undo ready
-              </button>
-              {host && (
-                <button
-                  className="btn btn-primary"
-                  disabled={disabled || !allReady}
-                  onClick={() => send({ type: "start" })}
-                >
-                  Start deal
-                </button>
-              )}
-            </>
+            <button
+              className="btn btn-ghost"
+              disabled={disabled}
+              onClick={() => send({ type: "ready", ready: false })}
+            >
+              Undo ready
+            </button>
           )}
         </div>
       </div>
@@ -369,7 +370,7 @@ export function RoomDetails({
             <strong>{p.name}</strong>
             <span>
               Team {(p.seat % 2) + 1} ·{" "}
-              {p.connected ? "Connected" : "Reconnecting"}
+              {p.bot ? "Bot" : p.connected ? "Connected" : "Reconnecting"}
             </span>
           </li>
         ))}
@@ -381,7 +382,7 @@ export function RoomDetails({
       {error && <p role="alert">{error}</p>}
       {replaced ? (
         <button className="btn btn-quiet" onClick={onBack}>
-          Back to practice
+          Back
         </button>
       ) : (
         <button className="btn btn-quiet" disabled={disabled} onClick={onLeave}>

@@ -2,7 +2,7 @@ export const PREFS_KEY = "mendikot.preferences.v1";
 
 /**
  * Bumped when a default changes for everyone. Saves from an older version
- * take the new defaults for `sound` and `haptics`; other choices are kept.
+ * take the new default for `sound`; other choices are kept.
  */
 const DEFAULTS_VERSION = 2;
 
@@ -33,7 +33,8 @@ export function readPrefs(): Preferences {
       sound: current ? data.sound !== false : true,
       speed: data.speed === "quick" ? "quick" : "relaxed",
       reducedMotion: data.reducedMotion === true,
-      haptics: current ? data.haptics !== false : true,
+      // Haptics were already on by default, so a saved "off" was a choice.
+      haptics: data.haptics !== false,
       volume:
         typeof data.volume === "number" && data.volume >= 0 && data.volume <= 1
           ? data.volume

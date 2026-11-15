@@ -23,8 +23,10 @@ import { HttpError } from "./http";
 export const TRICK_COLLECT_MS = 1700;
 /** How long a bot waits before playing, so humans can follow the table. */
 export const BOT_MOVE_MS = 1000;
+/** A bot's first move after cards are dealt waits for the deal animation. */
+export const BOT_AFTER_DEAL_MS = 1800;
 /** Names for bots, skipping any a person at the table already uses. */
-export const BOT_NAMES = ["Kavya", "Aniruddha", "Rohan", "Meera", "Arjun"];
+export const BOT_NAMES = ["Kavya", "Rohan", "Meera", "Arjun", "Dev"];
 /** Accepted command IDs remembered per player, so a retried command applies once. */
 export const RECEIPT_LIMIT = 64;
 export const MAX_NAME_LENGTH = 24;
@@ -136,14 +138,14 @@ export function newBot(room: RoomState, seat: Seat): Player {
  * Keeps `botAt` in step with the table: set when a bot is due to act and every
  * person is connected, cleared otherwise. An existing deadline is kept.
  */
-function scheduleBot(draft: RoomState, now: number) {
+function scheduleBot(draft: RoomState, now: number, delay = BOT_MOVE_MS) {
   const game = draft.game;
   const due =
     !!game &&
     (game.phase === "playing" || game.phase === "choosing-trump") &&
     !!draft.players[game.turn]?.bot &&
     humans(draft).every((p) => p.disconnectedAt === null);
-  draft.botAt = due ? (draft.botAt ?? now + BOT_MOVE_MS) : null;
+  draft.botAt = due ? (draft.botAt ?? now + delay) : null;
 }
 
 /** The earliest time the room needs an alarm: expiry, trick collection or a seat release. */
@@ -432,14 +434,17 @@ export function applyCommand(
       clearReadiness(draft);
       setupChanged = true;
       break;
-    case "seat":
-      if (active || draft.players[action.seat])
+    case "seat": {
+      const there = draft.players[action.seat];
+      if (active || (there && !there.bot))
         throw new RoomError("Choose an empty seat before the deal starts.");
+      // Taking a bot's seat swaps: the bot moves to the seat you left.
       draft.players[action.seat] = player;
-      draft.players[seat] = null;
+      draft.players[seat] = there;
       clearReadiness(draft);
       setupChanged = true;
       break;
+    }
     case "bot": {
       if (!host) throw new RoomError("Only the host can add or remove bots.");
       if (active) throw new RoomError("Change seats between deals.");
@@ -464,7 +469,12 @@ export function applyCommand(
     case "start": {
       if (!host) throw new RoomError("Only the host can start a new deal.");
       if (active) throw new RoomError("Finish this deal first.");
-      if (!draft.players.every((p) => p && p.ready && present(p, connected)))
+      // Starting is the host's own "ready".
+      if (
+        !draft.players.every(
+          (p) => p && (p.ready || p.id === id) && present(p, connected),
+        )
+      )
         throw new RoomError("Every seat needs a ready player or a bot.");
       // Seat 3 deals first, so seat 0 leads; after that the dealer rotates.
       const previous = draft.lastDealer ?? draft.game?.dealer;
@@ -499,7 +509,14 @@ export function applyCommand(
       setupChanged = true;
       break;
   }
-  scheduleBot(draft, now);
+  // After a deal the cards fly in first, so a bot's first move waits longer.
+  scheduleBot(
+    draft,
+    now,
+    action.type === "start" || action.type === "trump"
+      ? BOT_AFTER_DEAL_MS
+      : BOT_MOVE_MS,
+  );
   // A departed player has no receipts to keep.
   if (action.type !== "leave")
     draft.receipts[id] = [...(draft.receipts[id] ?? []), command.id].slice(

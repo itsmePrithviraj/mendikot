@@ -309,7 +309,7 @@ export function OnlineApp({
                     Play here instead
                   </button>
                   <button className="btn btn-ghost" onClick={back}>
-                    Back to practice
+                    Back
                   </button>
                 </section>
               ) : room ? (
@@ -340,7 +340,7 @@ export function OnlineApp({
                       : "Connecting to your room."}
                   </p>
                   <button className="btn btn-ghost" onClick={back}>
-                    Back to practice
+                    Back
                   </button>
                 </section>
               ) : (

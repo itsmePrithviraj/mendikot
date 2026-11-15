@@ -191,10 +191,10 @@
   color: var(--brass-bright);
   box-shadow: inset 0 0 0 1px rgb(210 181 122 / 0.45);
 }
+/* A full 44px target that overhangs the row edge instead of the name. */
 .seat-remove {
   flex: none;
-  width: 36px;
-  margin: 0 -6px 0 auto;
+  margin: 0 -12px 0 auto;
 }
 .add-bots .lucide,
 .add-bots svg {
